@@ -2,7 +2,7 @@
     var APIUtil = org.wso2.carbon.apimgt.impl.utils.APIUtil;
     var apiPath = "";
     var goBack = "";
-    if(session.get('apiPath') != null){
+    if (session.get('apiPath') != null) {
         apiPath = session.get('apiPath');
     }
     if(request.getParameter('goBack') != null){
