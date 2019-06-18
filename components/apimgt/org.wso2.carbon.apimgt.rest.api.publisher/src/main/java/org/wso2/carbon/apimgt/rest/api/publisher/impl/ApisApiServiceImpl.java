@@ -1815,6 +1815,10 @@ public class ApisApiServiceImpl extends ApisApiService {
                                         String ifUnmodifiedSince) {
         try {
             APIDefinition apiDefinitionFromOpenAPISpec = new APIDefinitionFromOpenAPISpec();
+            String response = apiDefinitionFromOpenAPISpec.validateAPIDefinition(apiDefinition);
+            if (StringUtils.isNotEmpty(response)) {
+                RestApiUtil.handleBadRequest(response, log);
+            }
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
             //this will fail if user does not have access to the API or the API does not exist

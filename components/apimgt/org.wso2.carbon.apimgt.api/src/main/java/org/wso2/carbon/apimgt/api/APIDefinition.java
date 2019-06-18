@@ -145,4 +145,11 @@ public abstract class APIDefinition {
         return uriTemplateMap;
     }
 
+    /**
+     * This method validates the API definition
+     *
+     * @param apiDefinition API definition as string
+     */
+    public abstract String validateAPIDefinition(String apiDefinition) throws APIManagementException;
+
 }

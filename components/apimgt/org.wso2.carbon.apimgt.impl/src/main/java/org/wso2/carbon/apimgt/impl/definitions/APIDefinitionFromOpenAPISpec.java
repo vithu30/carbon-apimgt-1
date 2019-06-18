@@ -18,6 +18,10 @@
 
 package org.wso2.carbon.apimgt.impl.definitions;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.parser.SwaggerParser;
+import io.swagger.parser.util.SwaggerDeserializationResult;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.simple.JSONArray;
@@ -40,6 +44,7 @@ import org.wso2.carbon.registry.api.RegistryException;
 import org.wso2.carbon.registry.api.Resource;
 import org.wso2.carbon.registry.core.session.UserRegistry;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.HashMap;
@@ -623,5 +628,44 @@ public class APIDefinitionFromOpenAPISpec extends APIDefinition {
         }
         operationObject.put(APIConstants.SWAGGER_X_AUTH_TYPE, authType);
         operationObject.put(APIConstants.SWAGGER_X_THROTTLING_TIER, uriTemplate.getThrottlingTier());
+    }
+
+    @Override
+    public String validateAPIDefinition(String apiDefinition) throws APIManagementException {
+
+        String response = "";
+        try {
+            JsonNode swagger = new ObjectMapper().readTree(apiDefinition);
+            if (swagger.get(APIConstants.SWAGGER) != null) {
+                // logic to validate swagger 2.0
+                SwaggerDeserializationResult swaggerDefinition = new SwaggerParser().readWithInfo(apiDefinition);
+                if (!(APIConstants.SWAGGER_V2.equals(swagger.get(APIConstants.SWAGGER).asText()))) {
+
+                    response = "Unsupported swagger version provided. Please add with swagger " +
+                            "version " + APIConstants.SWAGGER_V2;
+                    return response;
+                } else if (!swaggerDefinition.getMessages().isEmpty()) {
+                    response = "Swagger contains invalid parameters. Please add valid swagger definition";
+                    return response;
+                }
+            } else if (swagger.get(APIConstants.OPEN_API) != null) {
+                // logic to validate open api 3.0.x
+                if (!swagger.get(APIConstants.OPEN_API).asText().matches(APIConstants.OPEN_API_VERSION_REGEX)) {
+                    response = "Unsupported OpenAPI version provided. Please add with OpenAPI version "
+                            + APIConstants.OPEN_API_V3;
+                    return response;
+                } else if (swagger.get(APIConstants.SWAGGER_INFO) == null ||
+                        swagger.get(APIConstants.SWAGGER_PATHS) == null) {
+                    response = "Required property 'info' or 'paths' are not provided";
+                    return response;
+                }
+            } else {
+                response = "Unsupported swagger definition provided.";
+                return response;
+            }
+        } catch (IOException e) {
+            handleException("Invalid swagger definition provided.", e);
+        }
+        return response;
     }
 }
