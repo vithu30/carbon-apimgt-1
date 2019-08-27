@@ -1730,7 +1730,7 @@ paths:
 # The "Validate WSDL Definition" utility API
 ######################################################
 
-  '/apis/validate-wsdl':
+  /apis/validate-wsdl:
     post:
       consumes:
         - multipart/form-data
@@ -1752,14 +1752,6 @@ paths:
           name: file
           description: Definition to upload as a file
           type: file
-          required: false
-        - in: query
-          name: returnContent
-          description: |
-            Specify whether to return the full content of the WSDL definition in the response. This is only applicable
-            when using url based validation
-          type: boolean
-          default: false
           required: false
       tags:
         - Validation
@@ -5676,7 +5668,7 @@ paths:
       summary: Retreive publisher settings
       security:
         - OAuth2Security:
-          - apim:publisher_setting
+          - apim:publisher_settings
       description: |
         Retreive publisher settings
       tags:
@@ -6646,13 +6638,9 @@ definitions:
         type: string
         example: 01234567-0123-0123-0123-012345678901
       operations:
-       type: array
-       items:
-        properties:
-          uritemplate:
-            type: string
-          httpVerb:
-            type: string
+        type: array
+        items:
+          $ref: '#/definitions/APIOperations'
 
   #-----------------------------------------------------
   # The Resource Path resource
@@ -7801,16 +7789,6 @@ definitions:
                   type: string
                   description: "Endpoint URL"
                   example: "http://www.webservicex.net/stockquote.asmx"
-          bindingInfo:
-            description: |
-              WSDL binding related information
-            properties:
-              hasHttpBinding:
-                description: Indicates whether the WSDL contains HTTP Bindings
-                type: boolean
-              hasSoapBinding:
-                description: Indicates whether the WSDL contains SOAP Bindings
-                type: boolean
 
   GraphQLValidationResponse:
     title: GraphQL API definition validation Response

@@ -177,6 +177,9 @@ public final class APIConstants {
     public static final String FILE_URI_PREFIX = "file://";
     public static final String API_DOC_RESOURCE_NAME = "api-doc.json";
 
+    public static final String WSDL_VERSION_11 = "1.1";
+    public static final String WSDL_VERSION_20 = "2.0";
+
     public static final String API_DOC_1_2_RESOURCE_NAME = "/api-doc";
     public static final String API_OAS_DEFINITION_RESOURCE_NAME = "swagger.json";
 
@@ -303,7 +306,7 @@ public final class APIConstants {
 
     //This constant is used in Json schema validator
     public static final String API_OVERVIEW_ENABLE_JSON_SCHEMA = "overview_enableSchemaValidation";
-    
+
     //Those constance are used in Provider artifact.
     public static final String PROVIDER_OVERVIEW_NAME = "overview_name";
     public static final String PROVIDER_OVERVIEW_EMAIL = "overview_email";
@@ -388,6 +391,7 @@ public final class APIConstants {
     public static final String CURRENCY = "currencyType";
     public static final String BILLING_CYCLE = "billingCycle";
     public static final String FIXED_RATE = "fixedRate";
+    public static final String DYNAMIC_RATE = "dynamicRate";
     public static final String FIXED_PRICE = "fixedPrice";
     public static final String PRICE_PER_REQUEST = "pricePerRequest";
     public static final String API_MONETIZATION_STATUS = "isMonetizationEnabled";
@@ -988,7 +992,9 @@ public final class APIConstants {
     public static final String API_RESOURCE_CACHE_KEY = "API_RESOURCE_CACHE_KEY";
     public static final String API_ELECTED_RESOURCE = "API_ELECTED_RESOURCE";
 
+    // GraphQL related constants
     public static final String API_TYPE = "API_TYPE";
+    public static final String HTTP_VERB = "HTTP_VERB";
     public static final String GRAPHQL_API = "GRAPHQL";
     public static final String GRAPHQL_API_OPERATION_RESOURCE = "OPERATION_RESOURCE";
     public static final String GRAPHQL_API_OPERATION_TYPE = "OPERATION_TYPE";
@@ -1001,7 +1007,6 @@ public final class APIConstants {
     public static final String GRAPHQL_QUERY = "Query";
     public static final String GRAPHQL_MUTATION = "Mutation";
     public static final String GRAPHQL_SUBSCRIPTION = "Subscription";
-
 
     //URI Authentication Schemes
     public static final Set<String> GRAPHQL_SUPPORTED_METHOD_LIST =
@@ -1670,6 +1675,14 @@ public final class APIConstants {
         PRODUCT_API
     }
 
+    public static final String TENANT_STATE_ACTIVE = "ACTIVE";
+    public static final String TENANT_STATE_INACTIVE = "INACTIVE";
+
     public static final String GATEWAY_PUBLIC_CERTIFICATE_ALIAS = "gateway_certificate_alias";
 
+    //Constants for user API ratings
+    public static final String API_ID = "apiId";
+    public static final String RATING_ID = "ratingId";
+    public static final String RATING = "rating";
+    public static final String USER_NAME ="username";
 }

@@ -24,8 +24,9 @@ import { injectIntl } from 'react-intl';
 import API from 'AppData/api';
 import APIProduct from 'AppData/APIProduct';
 import CONSTS from 'AppData/Constants';
+import Configurations from 'Config';
+import StarRatingBar from 'AppComponents/Apis/Listing/StarRatingBar';
 import ImageGenerator from './ImageGenerator';
-import StarRatingBar from './StarRating';
 import ApiThumb from './ApiThumb';
 import { ApiContext } from '../Details/ApiContext';
 
@@ -64,6 +65,15 @@ class StarRatingColumn extends React.Component {
     }
 }
 
+const styles = (theme) => ({
+    rowImageOverride: {
+        '& .material-icons': {
+            marginTop: 5,
+            color: `${theme.custom.thumbnail.iconColor} !important` ,
+            fontSize: `${theme.custom.thumbnail.listViewIconSize}px !important` ,
+        }
+    }
+});
 class ApiTableView extends React.Component {
     constructor(props) {
         super(props);
@@ -73,7 +83,6 @@ class ApiTableView extends React.Component {
         this.page = 0;
         this.count = 100;
         this.rowsPerPage = 10;
-        this.getLocalStorage();
         this.pageType = null;
     }
 
@@ -85,10 +94,25 @@ class ApiTableView extends React.Component {
                     root: {
                         backgroundColor: 'transparent',
                         marginLeft: 40,
+                        marginBottom: 20,
                     },
                     paper: {
                         boxShadow: 'none',
+                        backgroundColor: 'transparent',
                     },
+                    tableRoot: {
+                        border: 'solid 1px #fff',
+                        '& a': {
+                            display: 'flex',
+                            alignItems: 'center',
+                        },
+                        '& a > div': {
+                            paddingRight: 10,
+                        },
+                        '& tr:nth-child(even)': {
+                            backgroundColor: '#fff',
+                        },
+                    }
                 },
                 MUIDataTableBodyCell: {
                     root: {
@@ -112,24 +136,26 @@ class ApiTableView extends React.Component {
                                 display: 'none',
                             },
                         },
+                        paper: {
+                            boxShadow: 'none',
+                            backgroundColor: 'transparent',
+                        },
                     },
                 },
             };
-            muiTheme = Object.assign(muiTheme, themeAdditions);
+            muiTheme = Object.assign(muiTheme, themeAdditions, Configurations.themes.light);
         }
         return createMuiTheme(muiTheme);
     };
 
     componentDidMount() {
         this.apiType = this.context.apiType;
-        this.getLocalStorage();
         this.getData();
     }
 
     componentDidUpdate() {
         if (this.apiType !== this.context.apiType) {
             this.apiType = this.context.apiType;
-            this.getLocalStorage();
             this.getData();
         }
     }
@@ -165,30 +191,10 @@ class ApiTableView extends React.Component {
             this.setState({
                 data: list,
             });
-            this.setLocalStorage();
         });
     };
 
-    setLocalStorage = () => {
-        // Set the page to the localstorage
-        const { apiType } = this.context;
-        const paginationSufix = apiType === API_PRODUCT_TYPE ? 'products' : 'apis';
-        const pagination = { page: this.page, count: this.count, rowsPerPage: this.rowsPerPage };
-        window.localStorage.setItem('pagination-' + paginationSufix, JSON.stringify(pagination));
-    };
-
-    getLocalStorage = () => {
-        const { paginationSufix } = this.props;
-        const storedPagination = window.localStorage.getItem('pagination-' + paginationSufix);
-        if (storedPagination) {
-            const pagination = JSON.parse(storedPagination);
-            if (pagination.page && pagination.count && pagination.rowsPerPage) {
-                this.page = pagination.page;
-                this.count = pagination.count;
-                this.rowsPerPage = pagination.rowsPerPage;
-            }
-        }
-    };
+   
 
     render() {
         const { intl, gridView } = this.props;
@@ -201,20 +207,11 @@ class ApiTableView extends React.Component {
                 },
             },
             {
-                name: 'image',
-                label: intl.formatMessage({
-                    id: 'Apis.Listing.ApiTableView.image',
-                    defaultMessage: 'image',
-                }),
+                name: 'name',
                 options: {
-                    customBodyRender: (value, tableMeta, updateValue) => {
-                        if (tableMeta.rowData) {
-                            const apiName = tableMeta.rowData[2];
-                            return <ImageGenerator api={apiName} width={30} height={30} />;
-                        }
-                    },
                     sort: false,
                     filter: false,
+                    display: 'excluded',
                 },
             },
             {
@@ -229,10 +226,11 @@ class ApiTableView extends React.Component {
                             const { apiType } = this.context;
                             const apiName = tableMeta.rowData[2];
                             const apiId = tableMeta.rowData[0];
+                            const { classes } = this.props;
                             if (apiType === CONSTS.API_TYPE) {
-                                return <Link to={'/apis/' + apiId}>{apiName}</Link>;
+                                return <Link to={'/apis/' + apiId + '/overview'} className={classes.rowImageOverride}><ImageGenerator api={apiName} width={30} height={30} />{apiName}</Link>;
                             } else {
-                                return <Link to={'/api-products/' + apiId}>{apiName}</Link>;
+                                return <Link to={'/api-products/' + apiId + '/overview'} className={classes.rowImageOverride}><ImageGenerator api={apiName} width={30} height={30} />{apiName}</Link>;
                             }
                         }
                     },
@@ -287,12 +285,20 @@ class ApiTableView extends React.Component {
                     customBodyRender: (value, tableMeta, updateValue) => {
                         if (tableMeta.rowData) {
                             const apiId = tableMeta.rowData[0];
-                            return <StarRatingColumn apiId={apiId} />;
+                            const avgRating = tableMeta.rowData[8];
+                            return <StarRatingBar apiRating={avgRating} apiId={apiId} isEditable={false} showSummary={false} />;
                         }
                     },
                     options: {
                         sort: false,
                     },
+                },
+            },
+            {
+                name: 'avgRating',
+                options: {
+                    display: 'excluded',
+                    filter: false,
                 },
             },
         ];
@@ -315,20 +321,24 @@ class ApiTableView extends React.Component {
             selectableRows: 'none',
             rowsPerPage,
             onChangeRowsPerPage: (numberOfRows) => {
+                const { page, count, } = this;
+                if( page*numberOfRows > count){
+                    this.page = 0;
+                }
                 this.rowsPerPage = numberOfRows;
                 this.getData();
-                this.setLocalStorage();
             },
         };
         if (gridView) {
-            options.customRowRender = (data, dataIndex, rowIndex) => {
+            options.customRowRender = (data, dataIndex, rowIndex ) => {
                 const api = {};
                 api.id = data[0];
-                api.name = data[1].props.api;
+                api.name = data[1];
                 api.version = data[3];
                 api.context = data[4];
                 api.provider = data[5];
                 api.type = data[6];
+                api.avgRating = data[8];
                 return <ApiThumb api={api} />;
             };
             options.title = false;
@@ -338,7 +348,9 @@ class ApiTableView extends React.Component {
             options.viewColumns = false;
             options.customToolbar = false;
         }
-
+        if(page === 0 && this.count <= rowsPerPage){
+            options.pagination = false;
+        }
         return (
             <MuiThemeProvider theme={this.getMuiTheme()}>
                 <MUIDataTable title='' data={data} columns={columns} options={options} />
@@ -349,4 +361,4 @@ class ApiTableView extends React.Component {
 
 ApiTableView.contextType = ApiContext;
 
-export default injectIntl(ApiTableView);
+export default injectIntl(withStyles(styles)(ApiTableView));
