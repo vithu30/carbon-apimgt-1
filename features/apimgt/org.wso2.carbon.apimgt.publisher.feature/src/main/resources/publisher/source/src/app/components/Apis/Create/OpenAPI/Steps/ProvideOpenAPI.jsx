@@ -68,29 +68,36 @@ export default function ProvideOpenAPI(props) {
         // accept the first file. This information is shown in the dropdown helper text
         const file = files.pop();
         let validFile = null;
-        API.validateOpenAPIByFile(file)
-            .then((response) => {
-                const {
-                    body: { isValid: isValidFile, info },
-                } = response;
-                if (isValidFile) {
-                    validFile = file;
-                    inputsDispatcher({ action: 'preSetAPI', value: info });
-                    setValidity({ ...isValid, file: null });
-                } else {
-                    setValidity({ ...isValid, file: { message: 'OpenAPI content validation failed!' } });
-                }
-            })
-            .catch((error) => {
-                setValidity({ ...isValid, file: { message: 'OpenAPI content validation failed!' } });
-                console.error(error);
-            })
-            .finally(() => {
-                setIsValidating(false); // Stop the loading animation
-                onValidate(validFile !== null); // If there is a valid file then validation has passed
-                // If the given file is valid , we set it as the inputValue else set `null`
-                inputsDispatcher({ action: 'inputValue', value: validFile });
-            });
+        if (file) {
+            console.log(JSON.stringify(file));
+            API.validateOpenAPIByFile(file)
+                .then((response) => {
+                    const {
+                        body: {isValid: isValidFile, info},
+                    } = response;
+                    if (isValidFile) {
+                        validFile = file;
+                        inputsDispatcher({action: 'preSetAPI', value: info});
+                        setValidity({...isValid, file: null});
+                    } else {
+                        setValidity({...isValid, file: {message: 'OpenAPI content validation failed!'}});
+                    }
+                })
+                .catch((error) => {
+                    setValidity({...isValid, file: {message: 'OpenAPI content validation failed!'}});
+                    console.error(error);
+                })
+                .finally(() => {
+                    setIsValidating(false); // Stop the loading animation
+                    onValidate(validFile !== null); // If there is a valid file then validation has passed
+                    // If the given file is valid , we set it as the inputValue else set `null`
+                    inputsDispatcher({action: 'inputValue', value: validFile});
+                });
+        } else {
+            setIsValidating(false);
+            onValidate(validFile !== null);
+            inputsDispatcher({action: 'inputValue', value: validFile});
+        }
     }
 
     /**

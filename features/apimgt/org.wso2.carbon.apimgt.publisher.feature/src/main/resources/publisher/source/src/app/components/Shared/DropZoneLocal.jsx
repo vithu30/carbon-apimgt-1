@@ -18,6 +18,8 @@
 import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useDropzone } from 'react-dropzone';
+import DeleteIcon from '@material-ui/icons/Delete';
+import { Button } from '@material-ui/core/';
 
 /**
  *
@@ -89,9 +91,14 @@ export default function DropZoneLocal(props) {
     } = dropZoneObject;
     let { acceptedFiles } = dropZoneObject;
     acceptedFiles = files || acceptedFiles;
+    const removeFile = file => {
+        acceptedFiles.splice(acceptedFiles.indexOf(file), 1);
+        onDrop(acceptedFiles);
+    };
     const filesList = acceptedFiles.map(file => (
         <li key={file.path}>
             {file.path} - {humanFileSize(file.size)}
+            <Button onClick={removeFile}><DeleteIcon/></Button>
         </li>
     ));
     baseStyle.borderColor = error ? rejectStyle.borderColor : '#eeeeee';

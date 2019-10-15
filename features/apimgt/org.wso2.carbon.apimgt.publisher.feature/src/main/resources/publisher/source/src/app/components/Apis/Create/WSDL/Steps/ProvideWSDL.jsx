@@ -131,14 +131,19 @@ export default function ProvideWSDL(props) {
      */
     function validateFileOrArchive(file, state = null) {
         if (state === null) {
-            setIsValidating(true);
-            Wsdl.validateFileOrArchive(file).then((response) => {
-                if (handleWSDLValidationResponse(response, 'file')) {
-                    inputsDispatcher({ action: 'inputValue', value: file });
-                }
-            }).catch((error) => {
-                handleWSDLValidationErrorResponse(error, 'file');
-            });
+            if (file) {
+                setIsValidating(true);
+                Wsdl.validateFileOrArchive(file).then((response) => {
+                    if (handleWSDLValidationResponse(response, 'file')) {
+                        inputsDispatcher({ action: 'inputValue', value: file });
+                    }
+                }).catch((error) => {
+                    handleWSDLValidationErrorResponse(error, 'file');
+                });
+            } else {
+                onValidate(false);
+                inputsDispatcher({ action: 'inputValue', value: file });
+            }
         } else {
             setValidity({ ...isError, file: state });
             onValidate(false);

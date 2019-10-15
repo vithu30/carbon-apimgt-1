@@ -58,29 +58,35 @@ export default function ProvideGraphQL(props) {
         // accept the first file. This information is shown in the dropdown helper text
         const file = files.pop();
         let validFile = null;
-        API.validateGraphQLFile(file)
-            .then((response) => {
-                const {
-                    body: { isValid: isValidFile, graphQLInfo },
-                } = response;
-                if (isValidFile) {
-                    validFile = file;
-                    inputsDispatcher({ action: 'graphQLInfo', value: graphQLInfo });
-                    setValidity({ ...isValid, file: null });
-                } else {
-                    setValidity({ ...isValid, file: { message: 'GraphQL content validation failed!' } });
-                }
-            })
-            .catch((error) => {
-                setValidity({ ...isValid, file: { message: 'GraphQL content validation failed!' } });
-                console.error(error);
-            })
-            .finally(() => {
-                setIsValidating(false); // Stop the loading animation
-                onValidate(validFile !== null); // If there is a valid file then validation has passed
-                // If the given file is valid , we set it as the inputValue else set `null`
-                inputsDispatcher({ action: 'inputValue', value: validFile });
-            });
+        if (file) {
+            API.validateGraphQLFile(file)
+                .then((response) => {
+                    const {
+                        body: {isValid: isValidFile, graphQLInfo},
+                    } = response;
+                    if (isValidFile) {
+                        validFile = file;
+                        inputsDispatcher({action: 'graphQLInfo', value: graphQLInfo});
+                        setValidity({...isValid, file: null});
+                    } else {
+                        setValidity({...isValid, file: {message: 'GraphQL content validation failed!'}});
+                    }
+                })
+                .catch((error) => {
+                    setValidity({...isValid, file: {message: 'GraphQL content validation failed!'}});
+                    console.error(error);
+                })
+                .finally(() => {
+                    setIsValidating(false); // Stop the loading animation
+                    onValidate(validFile !== null); // If there is a valid file then validation has passed
+                    // If the given file is valid , we set it as the inputValue else set `null`
+                    inputsDispatcher({action: 'inputValue', value: validFile});
+                });
+        } else {
+            setIsValidating(false);
+            onValidate(validFile !== null);
+            inputsDispatcher({action: 'inputValue', value: validFile});
+        }
     }
 
     return (
