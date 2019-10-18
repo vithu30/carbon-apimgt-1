@@ -18,14 +18,11 @@
 
 import React from 'react';
 import MenuItem from '@material-ui/core/MenuItem';
-import FormControl from '@material-ui/core/FormControl';
 import TextField from '@material-ui/core/TextField';
 import { withStyles } from '@material-ui/core/styles';
 import { FormattedMessage, injectIntl } from 'react-intl';
 import PropTypes from 'prop-types';
-import { FormLabel } from '@material-ui/core';
 import ChipInput from 'material-ui-chip-input';
-import FormHelperText from '@material-ui/core/FormHelperText';
 
 /**
  * @inheritdoc
@@ -136,11 +133,12 @@ const ApplicationCreate = (props) => {
                 name='name'
                 onChange={handleChange}
                 placeholder={intl.formatMessage({
-                    defaultMessage: 'My Mobile Application',
+                    defaultMessage: 'My Application',
                     id: 'Shared.AppsAndKeys.ApplicationCreateForm.my.mobile.application',
                 })}
                 onBlur={e => validateName(e.target.value)}
                 error={!isNameValid}
+                inputProps={{ maxLength: 70 }}
             />
             <TextField
                 classes={{

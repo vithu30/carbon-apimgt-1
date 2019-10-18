@@ -1332,8 +1332,7 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
         JwtTokenInfoDTO jwtTokenInfoDTO = APIUtil.getJwtTokenInfoDTO(application, userName,
                 MultitenantUtils.getTenantDomain(userName));
 
-        ExtendedApplicationDTO applicationDTO = new ExtendedApplicationDTO();
-        applicationDTO.setUuid(application.getUUID());
+        ApplicationDTO applicationDTO = new ApplicationDTO();
         applicationDTO.setId(application.getId());
         applicationDTO.setName(application.getName());
         applicationDTO.setOwner(application.getOwner());
@@ -1898,13 +1897,13 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
     }
 
     @Override
-    public void rateAPI(APIIdentifier apiId, APIRating rating, String user) throws APIManagementException {
-        apiMgtDAO.addRating(apiId, rating.getRating(), user);
+    public void rateAPI(Identifier id, APIRating rating, String user) throws APIManagementException {
+        apiMgtDAO.addRating(id, rating.getRating(), user);
     }
 
     @Override
-    public void removeAPIRating(APIIdentifier apiId, String user) throws APIManagementException {
-        apiMgtDAO.removeAPIRating(apiId, user);
+    public void removeAPIRating(Identifier id, String user) throws APIManagementException {
+        apiMgtDAO.removeAPIRating(id, user);
     }
 
     @Override
@@ -1913,10 +1912,10 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
     }
 
     @Override
-    public JSONObject getUserRatingInfo(APIIdentifier apiId, String user) throws APIManagementException {
-        JSONObject obj = apiMgtDAO.getUserRatingInfo(apiId, user);
+    public JSONObject getUserRatingInfo(Identifier id, String user) throws APIManagementException {
+        JSONObject obj = apiMgtDAO.getUserRatingInfo(id, user);
         if (obj == null || obj.isEmpty()) {
-            String msg = "Failed to get API ratings for API " + apiId + " for user " + user;
+            String msg = "Failed to get API ratings for API " + id.getName() + " for user " + user;
             log.error(msg);
             throw new APIMgtResourceNotFoundException(msg);
         }
@@ -2280,6 +2279,13 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
         return result;
     }
 
+    @Override
+    public Map<String, Object> searchPaginatedAPIs(String searchQuery, String requestedTenantDomain, int start, int end,
+            boolean isLazyLoad) throws APIManagementException {
+        Map<String, Object> searchResults =
+                super.searchPaginatedAPIs(searchQuery, requestedTenantDomain, start, end, isLazyLoad);
+        return filterMultipleVersionedAPIs(searchResults);
+    }
 
     /**
 	 * Pagination API search based on solr indexing
@@ -2788,15 +2794,18 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
         String tenantDomain = MultitenantUtils.getTenantDomain(tenantAwareUsername);
         final boolean isApiProduct = apiTypeWrapper.isAPIProduct();
         String state;
-
+        String apiContext;
+        
         if (isApiProduct) {
             product = apiTypeWrapper.getApiProduct();
             state = product.getState();
             identifier = product.getId();
+            apiContext = product.getContext();
         } else {
             api = apiTypeWrapper.getApi();
             state = api.getStatus();
             identifier = api.getId();
+            apiContext = api.getContext();
         }
 
         WorkflowResponse workflowResponse = null;
@@ -2824,17 +2833,11 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
                 workflowDTO.setWorkflowReference(String.valueOf(subscriptionId));
                 workflowDTO.setWorkflowType(WorkflowConstants.WF_TYPE_AM_SUBSCRIPTION_CREATION);
                 workflowDTO.setCallbackUrl(addSubscriptionWFExecutor.getCallbackURL());
-                if (!isApiProduct) {
-                    workflowDTO.setApiName(identifier.getName());
-                    workflowDTO.setApiContext(api.getContext());
-                    workflowDTO.setApiVersion(api.getId().getVersion());
-                    workflowDTO.setApiProvider(identifier.getProviderName());
-                    workflowDTO.setTierName(identifier.getTier());
-                } else {
-                    workflowDTO.setProductIdentifier(product.getId());
-                    workflowDTO.setApiProvider(identifier.getProviderName());
-                    workflowDTO.setTierName(identifier.getTier());
-                }
+                workflowDTO.setApiName(identifier.getName());
+                workflowDTO.setApiContext(apiContext);
+                workflowDTO.setApiVersion(identifier.getVersion());
+                workflowDTO.setApiProvider(identifier.getProviderName());
+                workflowDTO.setTierName(identifier.getTier());
                 workflowDTO.setApplicationName(apiMgtDAO.getApplicationNameFromId(applicationId));
                 workflowDTO.setApplicationId(applicationId);
                 workflowDTO.setSubscriber(userId);
@@ -2904,11 +2907,7 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
                 subscriptionUUID = addedSubscription.getUUID();
 
                 JSONObject subsLogObject = new JSONObject();
-                if (!isApiProduct) {
-                    subsLogObject.put(APIConstants.AuditLogConstants.API_NAME, identifier.getName());
-                } else {
-                    subsLogObject.put(APIConstants.AuditLogConstants.API_PRODUCT_NAME, identifier.getName());
-                }
+                subsLogObject.put(APIConstants.AuditLogConstants.API_NAME, identifier.getName());
                 subsLogObject.put(APIConstants.AuditLogConstants.PROVIDER, identifier.getProviderName());
                 subsLogObject.put(APIConstants.AuditLogConstants.APPLICATION_ID, applicationId);
                 subsLogObject.put(APIConstants.AuditLogConstants.APPLICATION_NAME, applicationName);
@@ -2923,9 +2922,9 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
             }
 
             if (log.isDebugEnabled()) {
-                String logMessage = "API/Product Name: " + identifier.getName() + ", API Version " + identifier.getVersion()
-                        + ", Subscription Status: " + subscriptionStatus + " subscribe by " + userId
-                        + " for app " + applicationName;
+                String logMessage = "API Name: " + identifier.getName() + ", API Version " + identifier.getVersion()
+                        + ", Subscription Status: " + subscriptionStatus + " subscribe by " + userId + " for app "
+                        + applicationName;
                 log.debug(logMessage);
             }
 
@@ -3014,15 +3013,18 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
             }
             workflowDTO.setApiProvider(identifier.getProviderName());
             API api = null;
+            APIProduct product = null;
+            String context = null;
             if (apiIdentifier != null) {
                 api = getAPI(apiIdentifier);
-                workflowDTO.setApiContext(api.getContext());
-                workflowDTO.setApiName(apiIdentifier.getApiName());
-                workflowDTO.setApiVersion(apiIdentifier.getVersion());
+                context = api.getContext();
             } else if (apiProdIdentifier != null) {
-                workflowDTO.setProductIdentifier(apiProdIdentifier);
+                product = getAPIProduct(apiProdIdentifier);
+                context = product.getContext();
             }
-
+            workflowDTO.setApiContext(context);
+            workflowDTO.setApiName(identifier.getName());
+            workflowDTO.setApiVersion(identifier.getVersion());
             workflowDTO.setApplicationName(applicationName);
             workflowDTO.setTenantDomain(tenantDomain);
             workflowDTO.setTenantId(tenantId);
@@ -3070,12 +3072,7 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
             }
 
             JSONObject subsLogObject = new JSONObject();
-            if (apiIdentifier != null) {
-                subsLogObject.put(APIConstants.AuditLogConstants.API_NAME, apiIdentifier.getApiName());
-            } else if (apiProdIdentifier != null) {
-                subsLogObject.put(APIConstants.AuditLogConstants.API_PRODUCT_NAME, apiProdIdentifier.getName());
-            }
-
+            subsLogObject.put(APIConstants.AuditLogConstants.API_NAME, identifier.getName());
             subsLogObject.put(APIConstants.AuditLogConstants.PROVIDER, identifier.getProviderName());
             subsLogObject.put(APIConstants.AuditLogConstants.APPLICATION_ID, applicationId);
             subsLogObject.put(APIConstants.AuditLogConstants.APPLICATION_NAME, applicationName);
@@ -3175,7 +3172,7 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
     }
 
     @Override
-    public String addComment(APIIdentifier identifier, Comment comment, String user) throws APIManagementException {
+    public String addComment(Identifier identifier, Comment comment, String user) throws APIManagementException {
         return apiMgtDAO.addComment(identifier, comment, user);
     }
 
@@ -3186,8 +3183,14 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
     }
 
     @Override
-    public Comment getComment(APIIdentifier identifier, String commentId) throws APIManagementException {
+    public Comment getComment(Identifier identifier, String commentId) throws APIManagementException {
         return apiMgtDAO.getComment(identifier, commentId);
+    }
+
+    @Override
+    public org.wso2.carbon.apimgt.api.model.Comment[] getComments(ApiTypeWrapper apiTypeWrapper)
+            throws APIManagementException {
+        return apiMgtDAO.getComments(apiTypeWrapper);
     }
 
     @Override
@@ -5416,7 +5419,14 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
     }
 
     private Map<String, Object> filterMultipleVersionedAPIs(Map<String, Object> searchResults) {
-        ArrayList<Object> apiSet = (ArrayList<Object>) searchResults.get("apis");
+        Object apiObj = searchResults.get("apis");
+        ArrayList<Object> apiSet;
+        ArrayList<APIProduct> apiProductSet = new ArrayList<>();
+        if (apiObj instanceof Set) {
+            apiSet = new ArrayList<>(((Set) apiObj));
+        } else {
+            apiSet = (ArrayList<Object>) apiObj;
+        }
 
         //filter store results if displayMultipleVersions is set to false
         Boolean displayMultipleVersions = APIUtil.isAllowDisplayMultipleVersions();
@@ -5429,6 +5439,8 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
                 } else if (result instanceof Map.Entry) {
                     Map.Entry<Documentation, API> entry = (Map.Entry<Documentation, API>)result;
                     resultApis.add(entry.getValue());
+                } else if (result instanceof APIProduct) {
+                    apiProductSet.add((APIProduct)result);
                 }
             }
 
@@ -5480,8 +5492,16 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
                 }
             }
             apiSet = tempApiSet;
-            apiSet.sort(new ContentSearchResultNameComparator());
-            searchResults.put("apis", apiSet);
+            ArrayList<Object> resultAPIandProductSet = new ArrayList<>();
+            resultAPIandProductSet.addAll(apiSet);
+            resultAPIandProductSet.addAll(apiProductSet);
+            resultAPIandProductSet.sort(new ContentSearchResultNameComparator());
+
+            if (apiObj instanceof Set) {
+                searchResults.put("apis", new HashSet<>(resultAPIandProductSet));
+            } else {
+                searchResults.put("apis", resultAPIandProductSet);
+            }
         }
         return searchResults;
     }

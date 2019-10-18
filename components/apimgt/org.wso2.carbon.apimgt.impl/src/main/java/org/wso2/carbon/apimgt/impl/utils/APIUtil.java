@@ -3101,6 +3101,30 @@ public final class APIUtil {
     }
 
     /**
+     * Check whether user is exist
+     *
+     * @param username A username
+     * @throws APIManagementException If an error occurs
+     */
+    public static boolean isUserExist(String username) throws APIManagementException {
+        if (username == null) {
+            throw new APIManagementException("Attempt to execute privileged operation as the anonymous user");
+        }
+        String tenantDomain = MultitenantUtils.getTenantDomain(username);
+        String tenantAwareUserName = MultitenantUtils.getTenantAwareUsername(username);
+        try {
+            int tenantId =
+                    ServiceReferenceHolder.getInstance().getRealmService().getTenantManager().getTenantId(tenantDomain);
+            UserStoreManager manager =
+                    ServiceReferenceHolder.getInstance().getRealmService().getTenantUserRealm(tenantId)
+                            .getUserStoreManager();
+            return manager.isExistingUser(tenantAwareUserName);
+        } catch (UserStoreException e) {
+            throw new APIManagementException("UserStoreException while trying the user existence " + username, e);
+        }
+    }
+
+    /**
      * To add the value to a cache.
      *
      * @param cacheName - Name of the Cache
@@ -4143,6 +4167,7 @@ public final class APIUtil {
                 }
             }
 
+            createAnalyticsRole(APIConstants.ANALYTICS_ROLE, tenantId);
             createSelfSignUpRoles(tenantId);
         }
     }
@@ -4440,6 +4465,19 @@ public final class APIUtil {
     }
 
     /**
+     * Create Analytics role with the given name in specified tenant
+     *
+     * @param roleName role name
+     * @param tenantId id of the tenant
+     * @throws APIManagementException
+     */
+    public static void createAnalyticsRole(String roleName, int tenantId) throws APIManagementException {
+        Permission[] analyticsPermissions = new Permission[]{
+                new Permission(APIConstants.Permissions.LOGIN, UserMgtConstants.EXECUTE_ACTION)};
+        createRole(roleName, analyticsPermissions, tenantId);
+    }
+
+    /**
      * Creates a role with a given set of permissions for the specified tenant
      *
      * @param roleName    role name
@@ -4531,8 +4569,8 @@ public final class APIUtil {
         return uriTemplate;
     }
 
-    public static float getAverageRating(APIIdentifier apiId) throws APIManagementException {
-        return ApiMgtDAO.getInstance().getAverageRating(apiId);
+    public static float getAverageRating(Identifier id) throws APIManagementException {
+        return ApiMgtDAO.getInstance().getAverageRating(id);
     }
 
     public static float getAverageRating(int apiId) throws APIManagementException {
@@ -5245,15 +5283,15 @@ public final class APIUtil {
 
             if ("in".equals(direction)) {
                 seqCollection = (org.wso2.carbon.registry.api.Collection) registry
-                        .get(APIConstants.API_CUSTOM_SEQUENCE_LOCATION + File.separator +
+                        .get(APIConstants.API_CUSTOM_SEQUENCE_LOCATION + RegistryConstants.PATH_SEPARATOR +
                                 APIConstants.API_CUSTOM_SEQUENCE_TYPE_IN);
             } else if ("out".equals(direction)) {
                 seqCollection = (org.wso2.carbon.registry.api.Collection) registry
-                        .get(APIConstants.API_CUSTOM_SEQUENCE_LOCATION + File.separator +
+                        .get(APIConstants.API_CUSTOM_SEQUENCE_LOCATION + RegistryConstants.PATH_SEPARATOR +
                                 APIConstants.API_CUSTOM_SEQUENCE_TYPE_OUT);
             } else if ("fault".equals(direction)) {
                 seqCollection = (org.wso2.carbon.registry.api.Collection) registry
-                        .get(APIConstants.API_CUSTOM_SEQUENCE_LOCATION + File.separator +
+                        .get(APIConstants.API_CUSTOM_SEQUENCE_LOCATION + RegistryConstants.PATH_SEPARATOR +
                                 APIConstants.API_CUSTOM_SEQUENCE_TYPE_FAULT);
             }
 
@@ -7657,7 +7695,7 @@ public final class APIUtil {
     }
 
     public static Map<String, Tier> getTiersFromPolicies(String policyLevel, int tenantId) throws APIManagementException {
-        Map<String, Tier> tierMap = new HashMap<String, Tier>();
+        Map<String, Tier> tierMap = new TreeMap<String, Tier>();
         ApiMgtDAO apiMgtDAO = ApiMgtDAO.getInstance();
         Policy[] policies;
         if (PolicyConstants.POLICY_LEVEL_SUB.equalsIgnoreCase(policyLevel)) {
@@ -8899,6 +8937,7 @@ public final class APIUtil {
             APIProductIdentifier apiProductIdentifier = new APIProductIdentifier(providerName, productName,
                     productVersion);
             apiProduct = new APIProduct(apiProductIdentifier);
+            apiProduct.setRating(Float.toString(getAverageRating(apiProductIdentifier)));
             ApiMgtDAO.getInstance().setAPIProductFromDB(apiProduct);
 
             setResourceProperties(apiProduct, registry, artifactPath);
@@ -9270,7 +9309,7 @@ public final class APIUtil {
         String alias = config.getFirstProperty(APIConstants.API_STORE_API_KEY_ALIAS);
         if (alias == null) {
             log.warn("The configurations related to Api Key alias in APIStore " +
-                    "are missing in api-manager.xml.");
+                    "are missing in api-manager.xml. Hence returning the default value.");
             return APIConstants.GATEWAY_PUBLIC_CERTIFICATE_ALIAS;
         }
         return alias;

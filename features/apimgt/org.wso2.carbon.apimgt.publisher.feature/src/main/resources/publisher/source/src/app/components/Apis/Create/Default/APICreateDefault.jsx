@@ -144,6 +144,7 @@ function APICreateDefault(props) {
                         Alert.error(message);
                         setPageError(message);
                     }
+                    console.error(error);
                 });
         } else {
             const newAPI = new API(apiData);
@@ -218,8 +219,8 @@ function APICreateDefault(props) {
                 <FormattedMessage
                     id='Apis.Create.Default.APICreateDefault.api.sub.heading'
                     defaultMessage={
-                        'Create an API providing Name, Version and Context parameters' +
-                        ' and optionally backend endpoint and business plans'
+                        'Create an API by providing a Name, a Version, a Context,' +
+                        ' Backend Endpoint(s) (optional), and Business Plans (optional).'
                     }
                 />
             </Typography>
@@ -238,8 +239,8 @@ function APICreateDefault(props) {
                     <FormattedMessage
                         id='Apis.Create.Default.APICreateDefault.apiProduct.sub.heading'
                         defaultMessage={
-                            'Create an API Product providing Name, Context parameters' +
-                            ' and optionally business plans'
+                            'Create an API Product by providing a Name, a Context,' +
+                            ' and Business Plans (optional).'
                         }
                     />
                 </Typography>
@@ -258,8 +259,8 @@ function APICreateDefault(props) {
                     <FormattedMessage
                         id='Apis.Create.Default.APICreateDefault.webSocket.sub.heading'
                         defaultMessage={
-                            'Create a WebSocket API providing Name, Context parameters' +
-                            ' and optionally business plans'
+                            'Create a WebSocket API by providing a Name, a Context,' +
+                            ' and Business Plans (optional).'
                         }
                     />
                 </Typography>

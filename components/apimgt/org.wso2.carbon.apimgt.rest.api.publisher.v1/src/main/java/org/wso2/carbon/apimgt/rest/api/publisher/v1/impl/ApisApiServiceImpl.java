@@ -100,6 +100,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -114,6 +115,7 @@ import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIListDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIMonetizationInfoDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIOperationsDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIRevenueDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ApiEndpointValidationResponseDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.CertificateInfoDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ClientCertMetadataDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ClientCertificatesDTO;
@@ -132,7 +134,6 @@ import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.PaginationDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ResourcePathListDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ResourcePolicyInfoDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ResourcePolicyListDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ScopeDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ThrottlingPolicyDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.WSDLValidationResponseDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.WorkflowResponseDTO;
@@ -146,11 +147,20 @@ import org.wso2.carbon.apimgt.rest.api.publisher.v1.utils.mappings.MediationMapp
 import org.wso2.carbon.apimgt.rest.api.util.RestApiConstants;
 import org.wso2.carbon.apimgt.rest.api.util.dto.ErrorDTO;
 import org.wso2.carbon.apimgt.rest.api.util.utils.RestApiUtil;
+import org.wso2.carbon.base.ServerConfiguration;
 import org.wso2.carbon.registry.api.Resource;
 import org.wso2.carbon.registry.core.RegistryConstants;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.HeadMethod;
+import org.apache.http.HttpHost;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.conn.params.ConnRoutePNames;
+import org.wso2.carbon.utils.CarbonUtils;
 
 public class ApisApiServiceImpl implements ApisApiService {
 
@@ -400,6 +410,10 @@ public class ApisApiServiceImpl implements ApisApiService {
                             provider + ") overridden with current user (" + username + ")");
                 }
                 provider = username;
+            } else {
+                if (!APIUtil.isUserExist(provider)) {
+                    RestApiUtil.handleBadRequest("Specified provider " + provider + " not exist.", log);
+                }
             }
         } else {
             //Set username in case provider is null or empty
@@ -1347,8 +1361,9 @@ public class ApisApiServiceImpl implements ApisApiService {
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
-            documentation = apiProvider.getDocumentation(documentId, tenantDomain);
+            //this will fail if API is not accessible
             APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
+            documentation = apiProvider.getDocumentation(documentId, tenantDomain);
             if (documentation == null) {
                 RestApiUtil.handleResourceNotFoundError(RestApiConstants.RESOURCE_DOCUMENTATION, documentId, log);
             }
@@ -1385,6 +1400,8 @@ public class ApisApiServiceImpl implements ApisApiService {
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
+            //this will fail if user does not have access to the API or the API does not exist
+            APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
             String sourceUrl = body.getSourceUrl();
             Documentation oldDocument = apiProvider.getDocumentation(documentId, tenantDomain);
 
@@ -1408,8 +1425,6 @@ public class ApisApiServiceImpl implements ApisApiService {
             body.setName(oldDocument.getName());
 
             Documentation newDocumentation = DocumentationMappingUtil.fromDTOtoDocumentation(body);
-            //this will fail if user does not have access to the API or the API does not exist
-            APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
             newDocumentation.setFilePath(oldDocument.getFilePath());
             apiProvider.updateDocumentation(apiIdentifier, newDocumentation);
 
@@ -1705,8 +1720,8 @@ public class ApisApiServiceImpl implements ApisApiService {
             //Getting the api base path out apiResourcePath
             apiResourcePath = apiResourcePath.substring(0, apiResourcePath.lastIndexOf("/"));
             //Getting specified mediation policy
-            Mediation mediation = apiProvider.getApiSpecificMediationPolicy(apiResourcePath,
-                    mediationPolicyId);
+            Mediation mediation =
+                    apiProvider.getApiSpecificMediationPolicy(apiIdentifier, apiResourcePath, mediationPolicyId);
             if (mediation != null) {
                 if (isAPIModified(api, mediation)) {
                     apiProvider.updateAPI(api);
@@ -1714,8 +1729,8 @@ public class ApisApiServiceImpl implements ApisApiService {
             } else {
                 RestApiUtil.handleResourceNotFoundError(RestApiConstants.RESOURCE_POLICY, mediationPolicyId, log);
             }
-            boolean deletionStatus = apiProvider.deleteApiSpecificMediationPolicy(apiResourcePath,
-                    mediationPolicyId);
+            boolean deletionStatus =
+                    apiProvider.deleteApiSpecificMediationPolicy(apiIdentifier, apiResourcePath, mediationPolicyId);
             if (deletionStatus) {
                 return Response.ok().build();
             } else {
@@ -1763,8 +1778,8 @@ public class ApisApiServiceImpl implements ApisApiService {
             //Getting the api base path out of apiResourcePath
             apiResourcePath = apiResourcePath.substring(0, apiResourcePath.lastIndexOf("/"));
             //Getting specified mediation policy
-            Mediation mediation = apiProvider.getApiSpecificMediationPolicy(apiResourcePath,
-                    mediationPolicyId);
+            Mediation mediation =
+                    apiProvider.getApiSpecificMediationPolicy(apiIdentifier, apiResourcePath, mediationPolicyId);
             if (mediation != null) {
                 MediationDTO mediationDTO =
                         MediationMappingUtil.fromMediationToDTO(mediation);
@@ -1819,8 +1834,8 @@ public class ApisApiServiceImpl implements ApisApiService {
             //Getting the api base path out of apiResourcePath
             apiResourcePath = apiResourcePath.substring(0, apiResourcePath.lastIndexOf("/"));
             //Getting resource correspond to the given uuid
-            Resource mediationResource = apiProvider.getApiSpecificMediationResourceFromUuid
-                    (mediationPolicyId, apiResourcePath);
+            Resource mediationResource = apiProvider
+                    .getApiSpecificMediationResourceFromUuid(apiIdentifier, mediationPolicyId, apiResourcePath);
             if (mediationResource != null) {
                 ResourceFile contentFile = new ResourceFile(fileInputStream, fileDetail.getContentType().toString());
 
@@ -1828,12 +1843,11 @@ public class ApisApiServiceImpl implements ApisApiService {
                 resourcePath = mediationResource.getPath();
 
                 //Updating the existing mediation policy
-                String updatedPolicyUrl = apiProvider.addResourceFile(resourcePath, contentFile);
+                String updatedPolicyUrl = apiProvider.addResourceFile(apiIdentifier, resourcePath, contentFile);
                 if (StringUtils.isNotBlank(updatedPolicyUrl)) {
                     String uuid = apiProvider.getCreatedResourceUuid(resourcePath);
                     //Getting the updated mediation policy
-                    updatedMediation = apiProvider.getApiSpecificMediationPolicy
-                            (apiResourcePath, uuid);
+                    updatedMediation = apiProvider.getApiSpecificMediationPolicy(apiIdentifier, apiResourcePath, uuid);
                     MediationDTO updatedMediationDTO =
                             MediationMappingUtil.fromMediationToDTO(updatedMediation);
                     URI uploadedMediationUri = new URI(updatedPolicyUrl);
@@ -1889,8 +1903,8 @@ public class ApisApiServiceImpl implements ApisApiService {
             //Getting the api base path out of apiResourcePath
             apiResourcePath = apiResourcePath.substring(0, apiResourcePath.lastIndexOf("/"));
             //Getting resource correspond to the given uuid
-            Resource mediationResource = apiProvider.getApiSpecificMediationResourceFromUuid
-                    (mediationPolicyId, apiResourcePath);
+            Resource mediationResource = apiProvider
+                    .getApiSpecificMediationResourceFromUuid(apiIdentifier, mediationPolicyId, apiResourcePath);
             if (mediationResource == null) {
                 RestApiUtil.handleResourceNotFoundError(RestApiConstants.RESOURCE_MEDIATION_POLICY, mediationPolicyId, log);
                 return null;
@@ -1976,7 +1990,7 @@ public class ApisApiServiceImpl implements ApisApiService {
 
                 ResourceFile contentFile = new ResourceFile(fileInputStream, fileContentType);
                 //Adding api specific mediation policy
-                mediationPolicyUrl = apiProvider.addResourceFile(mediationResourcePath, contentFile);
+                mediationPolicyUrl = apiProvider.addResourceFile(apiIdentifier, mediationResourcePath, contentFile);
             } else if (inlineContent != null) {
                 //todo
             }
@@ -1985,8 +1999,8 @@ public class ApisApiServiceImpl implements ApisApiService {
                 //Getting the uuid of created mediation policy
                 String uuid = apiProvider.getCreatedResourceUuid(mediationResourcePath);
                 //Getting created Api specific mediation policy
-                Mediation createdMediation = apiProvider.getApiSpecificMediationPolicy
-                        (apiResourcePath, uuid);
+                Mediation createdMediation =
+                        apiProvider.getApiSpecificMediationPolicy(apiIdentifier, apiResourcePath, uuid);
                 MediationDTO createdPolicy =
                         MediationMappingUtil.fromMediationToDTO(createdMediation);
                 URI uploadedMediationUri = new URI(mediationPolicyUrl);
@@ -2556,7 +2570,7 @@ public class ApisApiServiceImpl implements ApisApiService {
             API api = apiProvider.getAPIbyUUID(apiId, tenantDomain);
             ResourceFile apiImage = new ResourceFile(fileInputStream, fileContentType);
             String thumbPath = APIUtil.getIconPath(api.getId());
-            String thumbnailUrl = apiProvider.addResourceFile(thumbPath, apiImage);
+            String thumbnailUrl = apiProvider.addResourceFile(api.getId(), thumbPath, apiImage);
             api.setThumbnailUrl(APIUtil.prependTenantPrefix(thumbnailUrl, api.getId().getProviderName()));
             APIUtil.setResourcePermissions(api.getId().getProviderName(), null, null, thumbPath);
 
@@ -2654,6 +2668,46 @@ public class ApisApiServiceImpl implements ApisApiService {
             RestApiUtil.handleInternalServerError("Error while checking the api existence", e, log);
         }
         return Response.status(Response.Status.NOT_FOUND).build();
+    }
+
+    @Override
+    public Response validateEndpoint(String endpointUrl, String apiId, MessageContext messageContext) {
+
+        ApiEndpointValidationResponseDTO apiEndpointValidationResponseDTO = new ApiEndpointValidationResponseDTO();
+        apiEndpointValidationResponseDTO.setError("");
+        try {
+            URL url = new URL(endpointUrl);
+            if (url.getProtocol().matches("https")) {
+                ServerConfiguration serverConfig = CarbonUtils.getServerConfiguration();
+                String trustStorePath = serverConfig.getFirstProperty("Security.TrustStore.Location");
+                String trustStorePassword = serverConfig.getFirstProperty("Security.TrustStore.Password");
+                System.setProperty("javax.net.ssl.trustStore", trustStorePath);
+                System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
+
+                String keyStore = serverConfig.getFirstProperty("Security.KeyStore.Location");
+                String keyStoreType = serverConfig.getFirstProperty("Security.KeyStore.Type");
+                String keyStorePassword = serverConfig.getFirstProperty("Security.KeyStore.Password");
+                System.setProperty("javax.net.ssl.keyStoreType", keyStoreType);
+                System.setProperty("javax.net.ssl.keyStore", keyStore);
+                System.setProperty("javax.net.ssl.keyStorePassword", keyStorePassword);
+
+                /* apiId can be used to get the related API's uriTemplates. These uriTemplates can be used to extract
+                the API operations and append those operations separately to the API endpoint url. This edited url can
+                 be used to test the endpoint, in case their is no valid url for the sole endpoint url provided. */
+                apiEndpointValidationResponseDTO = sendHttpHEADRequest(endpointUrl);
+                return Response.status(Response.Status.OK).entity(apiEndpointValidationResponseDTO).build();
+            } else if (url.getProtocol().matches("http")) {
+                apiEndpointValidationResponseDTO = sendHttpHEADRequest(endpointUrl);
+                return Response.status(Response.Status.OK).entity(apiEndpointValidationResponseDTO).build();
+            }
+        } catch (MalformedURLException e) {
+            log.error("Malformed Url error occurred while sending the HEAD request to the given endpoint url:", e);
+            apiEndpointValidationResponseDTO.setError(e.getMessage());
+        } catch (Exception e) {
+            RestApiUtil.handleInternalServerError("Error while testing the validity of API endpoint url " +
+                    "existence", e, log);
+        }
+        return Response.status(Response.Status.OK).entity(apiEndpointValidationResponseDTO).build();
     }
 
     @Override
@@ -3585,5 +3639,48 @@ public class ApisApiServiceImpl implements ApisApiService {
                 }
             }
         }
+    }
+
+    /**
+     * Send HTTP HEAD request to test the endpoint url
+     *
+     * @param urlVal url for which the HEAD request is sent
+     * @return ApiEndpointValidationResponseDTO Response DTO containing validity information of the HEAD request made
+     * to test the endpoint url
+     */
+    public static ApiEndpointValidationResponseDTO sendHttpHEADRequest(String urlVal) {
+
+        ApiEndpointValidationResponseDTO apiEndpointValidationResponseDTO = new ApiEndpointValidationResponseDTO();
+        HttpHead head = new HttpHead(urlVal);
+        org.apache.commons.httpclient.HttpClient client = new org.apache.commons.httpclient.HttpClient();
+        // extract the host name and add the Host http header for sanity
+        head.addHeader("Host", urlVal.replaceAll("https?://", "").
+                replaceAll("(/.*)?", ""));
+        client.getParams().setParameter("http.socket.timeout", 4000);
+        client.getParams().setParameter("http.connection.timeout", 4000);
+        HttpMethod method = new HeadMethod(urlVal);
+
+        if (System.getProperty(APIConstants.HTTP_PROXY_HOST) != null &&
+                System.getProperty(APIConstants.HTTP_PROXY_PORT) != null) {
+            log.debug("Proxy configured, hence routing through configured proxy");
+            String proxyHost = System.getProperty(APIConstants.HTTP_PROXY_HOST);
+            String proxyPort = System.getProperty(APIConstants.HTTP_PROXY_PORT);
+            client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY,
+                    new HttpHost(proxyHost, Integer.parseInt(proxyPort)));
+        }
+        try {
+            int statusCode = client.executeMethod(method);
+            apiEndpointValidationResponseDTO.setStatusCode(statusCode);
+            apiEndpointValidationResponseDTO.setStatusMessage(HttpStatus.getStatusText(statusCode));
+        } catch (UnknownHostException e) {
+            log.error("UnknownHostException occurred while sending the HEAD request to the given endpoint url:", e);
+            apiEndpointValidationResponseDTO.setError("Unknown Host");
+        } catch (IOException e) {
+            log.error("Error occurred while sending the HEAD request to the given endpoint url:", e);
+            apiEndpointValidationResponseDTO.setError("Connection error");
+        } finally {
+            method.releaseConnection();
+        }
+        return apiEndpointValidationResponseDTO;
     }
 }

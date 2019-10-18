@@ -37,6 +37,7 @@ import Paper from '@material-ui/core/Paper';
 import { red } from '@material-ui/core/colors/';
 import Alert from 'AppComponents/Shared/Alert';
 import Api from 'AppData/api';
+import { isRestricted } from 'AppData/AuthManager';
 
 const styles = theme => ({
     root: {
@@ -206,7 +207,7 @@ class CreateScope extends React.Component {
             valid[id].invalid = true;
             valid[id].error = 'Scope name already exist';
         }
-        if (!valid[id].invalid && /[!@#$%^&*(),.?":{}[\]|<>\t\n]/i.test(value)) {
+        if (!valid[id].invalid && /[!@#$%^&*(),?"{}[\]|<>\t\n]|(^apim:)/i.test(value)) {
             valid[id].invalid = true;
             valid[id].error = 'Field contains special characters';
         }
@@ -434,7 +435,8 @@ class CreateScope extends React.Component {
                                         variant='contained'
                                         color='primary'
                                         onClick={this.addScope}
-                                        disabled={this.state.valid.name.invalid || invalidRoles.length !== 0}
+                                        disabled={isRestricted(['apim:api_create'], api) ||
+                                        this.state.valid.name.invalid || invalidRoles.length !== 0}
                                         className={classes.saveButton}
                                     >
                                         <FormattedMessage
