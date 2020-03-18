@@ -2021,4 +2021,14 @@ public final class APIConstants {
 
         }
     }
+
+    public static class ServiceDiscoveryAttributes {
+
+        public static final String SERVICE_DISCOVERY_CONFIGS = "ServiceDiscoveryConfiguration";
+        public static final String SERVICE_DISCOVERY = "ServiceDiscovery";
+        public static final String SERVICE_DISCOVERY_CLASS = "ClassName";
+        public static final String URL = "MasterURL";
+        public static final String SERVICE_DISCOVERY_TYPE = "type";
+        public static final String SERVICE_DISCOVERY_DISPLAYNAME = "DisplayName";
+    }
 }

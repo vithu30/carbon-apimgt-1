@@ -6700,6 +6700,66 @@ paths:
           schema:
             $ref: '#/definitions/APICategoryList'
 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################
+# The "Service Discovery" resource API
+######################################################
+
+  /service-discovery/endpoints/{type}:
+
+    #########################################################
+    # Retriving the list of available services in the cluster
+    #########################################################
+    get:
+      x-wso2-curl: ""
+      summary: Get list of services in the cluster.
+      description: |
+        Using this operation, you can retrieve complete list of available services in the clusters.
+      parameters:
+        - $ref: '#/parameters/type'
+      tags:
+        - Service Discovery
+      responses:
+        200:
+          description: |
+            Ok.
+            List of services for requested type is returned.
+          headers:
+            Content-type:
+              description: |
+                The content type of the body.
+              type: string
+            ETag:
+              description: |
+                Entity Tag of the response resource. Used by caches, or in conditional requests
+                (Will be supported in future).
+              type: string
+            Last-Modified:
+              description: |
+                Date and time the resource has been modified the last time.
+                Used by caches, or in conditional requests (Will be supported in future).
+              type: string
+          schema:
+            $ref: '#/definitions/ServiceDiscoveriesInfo'
+        304:
+          description: |
+            Not Modified.
+            Empty body because the client has already the latest version of the requested
+            resource (Will be supported in future).
+        404:
+          description: |
+            Not Found.
+            No services are available in the cluster in requested namespace or type.
+          schema:
+            $ref: '#/definitions/Error'
+        406:
+          description: |
+            Not Acceptable.
+            The requested media type is not supported
+          schema:
+            $ref: '#/definitions/Error'
+
 ######################################################
 # Parameters - required by some of the APIs above
 ######################################################
@@ -6757,6 +6817,15 @@ parameters:
       Name of the API
     required: true
     type: string
+
+#Specifies the service discovery system to select sevices from it
+  type:
+    name: type
+    type: string
+    in: path
+    required: true
+    description: |
+      Service discovery system type
 
   # API version
   # Specified as part of the query string
@@ -7875,6 +7944,47 @@ definitions:
         # example:
         #   next: "/apis/01234567-0123-0123-0123-012345678901/documents?limit=1&offset=2"
         #   previous: "/apis/01234567-0123-0123-0123-012345678901/documents?limit=1&offset=0"
+
+  #------------------------------------------------------
+  # service_discoveriesResponse definition.
+  #------------------------------------------------------
+  serviceDiscoveriesResponse:
+    title: List of services
+    type: string #Kubernetes
+    # services:
+    properties:
+      serviceName:
+        type: string
+        description: service name available in the cluster
+        example: foo-service
+      serviceURL:
+        type: string
+        description: url of the service
+        example: http://10.0.0.11:6379
+      properties:
+        type: string
+        description: properties of the available services
+        example:
+
+  #------------------------------------------------------
+  # service_discoveriesResponse definition.
+  #------------------------------------------------------
+  ServiceDiscoveriesInfo:
+    title: List of services
+     #Kubernetes
+    # services:
+    properties:
+      serviceName:
+        type: string
+        description: service name available in the cluster
+        example: foo-service
+      serviceURL:
+        type: string
+        description: url of the service
+        example: http://10.0.0.11:6379
+      properties:
+        type: string
+        description: properties of the available services
 
   #-----------------------------------------------------
   # The Document resource
