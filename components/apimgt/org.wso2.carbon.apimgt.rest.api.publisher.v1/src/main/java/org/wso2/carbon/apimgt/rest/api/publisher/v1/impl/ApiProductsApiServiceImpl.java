@@ -54,6 +54,7 @@ import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -508,6 +509,9 @@ public class ApiProductsApiServiceImpl implements ApiProductsApiService {
             APIProduct product = APIMappingUtil.fromDTOtoAPIProduct(body, username);
             //We do not allow to modify provider,name,version  and uuid. Set the origial value
             APIProductIdentifier productIdentifier = retrievedProduct.getId();
+            if(APIConstants.PUBLIC_STORE_VISIBILITY.equals(product.getVisibility())) {
+                product.setVisibility(StringUtils.EMPTY);
+            }
             product.setID(productIdentifier);
             product.setUuid(apiProductId);
 

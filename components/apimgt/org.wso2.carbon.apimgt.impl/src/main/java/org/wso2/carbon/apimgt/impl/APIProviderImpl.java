@@ -3284,16 +3284,90 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), authorizedRoles,
                         artifact.getPath(), registry);
 
-                String docFilePath = artifact.getAttribute(APIConstants.DOC_FILE_PATH);
-                if (org.apache.commons.lang.StringUtils.isEmpty(docFilePath)) {
-                    int startIndex = docFilePath.indexOf("governance") + "governance".length();
-                    String filePath = docFilePath.substring(startIndex, docFilePath.length());
+                String docType = artifact.getAttribute(APIConstants.DOC_SOURCE_TYPE);
+                if (APIConstants.IMPLEMENTATION_TYPE_INLINE.equals(docType) ||
+                        APIConstants.IMPLEMENTATION_TYPE_MARKDOWN.equals(docType)) {
+                    String docContentPath = APIUtil.getAPIDocPath(api.getId()) + APIConstants
+                            .INLINE_DOCUMENT_CONTENT_DIR + RegistryConstants.PATH_SEPARATOR
+                            + artifact.getAttribute(APIConstants.DOC_NAME);
+                    APIUtil.clearResourcePermissions(docContentPath, api.getId(), tenantId);
                     APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(),
-                            authorizedRoles, filePath, registry);
+                            authorizedRoles, docContentPath, registry);
+                } else if (APIConstants.IMPLEMENTATION_TYPE_FILE.equals(docType)) {
+                    String docFilePath = APIUtil.getDocumentationFilePath(api.getId(),
+                            artifact.getAttribute(APIConstants.DOC_FILE_PATH).split(
+                                    APIConstants.DOCUMENT_FILE_DIR + RegistryConstants.PATH_SEPARATOR)[1]);
+                    APIUtil.clearResourcePermissions(docFilePath, api.getId(), tenantId);
+                    APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(),
+                    authorizedRoles, docFilePath, registry);
                 }
             } catch (UserStoreException e) {
                 throw new APIManagementException("Error in retrieving Tenant Information while adding api :"
                         + api.getId().getApiName(), e);
+            }
+        } catch (RegistryException e) {
+            handleException("Failed to update visibility of documentation", e);
+        }
+    }
+
+    /**
+     * Updates a visibility of the documentation
+     *
+     * @param apiProduct       APIProduct
+     * @param documentation    Documentation
+     * @throws APIManagementException if failed to update visibility
+     */
+    private void updateDocVisibility(APIProduct apiProduct, Documentation documentation) throws APIManagementException {
+        try {
+            GenericArtifactManager artifactManager = APIUtil.getArtifactManager(registry,APIConstants.DOCUMENTATION_KEY);
+            if (artifactManager == null) {
+                String errorMessage = "Artifact manager is null when updating documentation of " +
+                        "API Product " + apiProduct.getId().getName();
+                throw new APIManagementException(errorMessage);
+            }
+
+            GenericArtifact artifact = artifactManager.getGenericArtifact(documentation.getId());
+            String[] authorizedRoles = new String[0];
+            String visibleRolesList = apiProduct.getVisibleRoles();
+            if (visibleRolesList != null) {
+                authorizedRoles = visibleRolesList.split(",");
+            }
+
+            int tenantId;
+            String tenantDomain =
+                    MultitenantUtils.getTenantDomain(APIUtil.replaceEmailDomainBack(apiProduct.getId()
+                            .getProviderName()));
+            try {
+                tenantId = getTenantId(tenantDomain);
+
+                GenericArtifact updateApiArtifact = APIUtil.createDocArtifactContent(artifact,
+                        apiProduct.getId(), documentation);
+                artifactManager.updateGenericArtifact(updateApiArtifact);
+                APIUtil.clearResourcePermissions(artifact.getPath(), apiProduct.getId(), tenantId);
+
+                APIUtil.setResourcePermissions(apiProduct.getId().getProviderName(),
+                        apiProduct.getVisibility(), authorizedRoles, artifact.getPath(), registry);
+
+                String docType = artifact.getAttribute(APIConstants.DOC_SOURCE_TYPE);
+                if (APIConstants.IMPLEMENTATION_TYPE_INLINE.equals(docType) ||
+                        APIConstants.IMPLEMENTATION_TYPE_MARKDOWN.equals(docType)) {
+                    String docContentPath = APIUtil.getAPIProductPath(apiProduct.getId()) + APIConstants
+                            .INLINE_DOCUMENT_CONTENT_DIR + RegistryConstants.PATH_SEPARATOR
+                            + artifact.getAttribute(APIConstants.DOC_NAME);
+                    APIUtil.clearResourcePermissions(docContentPath, apiProduct.getId(), tenantId);
+                    APIUtil.setResourcePermissions(apiProduct.getId().getProviderName(),
+                            apiProduct.getVisibility(), authorizedRoles, docContentPath, registry);
+                } else if (APIConstants.IMPLEMENTATION_TYPE_FILE.equals(docType)) {
+                    String docFilePath = APIUtil.getDocumentationFilePath(apiProduct.getId(),
+                            artifact.getAttribute(APIConstants.DOC_FILE_PATH).split(
+                                    APIConstants.DOCUMENT_FILE_DIR + RegistryConstants.PATH_SEPARATOR)[1]);
+                    APIUtil.clearResourcePermissions(docFilePath, apiProduct.getId(), tenantId);
+                    APIUtil.setResourcePermissions(apiProduct.getId().getProviderName(),
+                            apiProduct.getVisibility(), authorizedRoles, docFilePath, registry);
+                }
+            } catch (UserStoreException e) {
+                throw new APIManagementException("Error in retrieving Tenant Information while adding api product :"
+                        + apiProduct.getId().getName(), e);
             }
         } catch (RegistryException e) {
             handleException("Failed to update visibility of documentation", e);
@@ -7350,6 +7424,12 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         if (!failedGateways.isEmpty() &&
                 (!failedGateways.get("UNPUBLISHED").isEmpty() || !failedGateways.get("PUBLISHED").isEmpty())) {
             throw new FaultGatewaysException(failedGateways);
+        }
+
+        List<Documentation> productDocs = getAllDocumentation(product.getId());
+        for (int i =0; i < productDocs.size(); i++) {
+            Documentation document = productDocs.get(i);
+            updateDocVisibility(product, document);
         }
 
         return apiToProductResourceMapping;
