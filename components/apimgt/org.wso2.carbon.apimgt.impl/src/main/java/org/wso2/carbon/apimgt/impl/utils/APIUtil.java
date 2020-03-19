@@ -208,6 +208,12 @@ import org.wso2.carbon.utils.FileUtil;
 import org.wso2.carbon.utils.NetworkUtils;
 import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 import org.xml.sax.SAXException;
+import io.fabric8.openshift.client.DefaultOpenShiftClient;
+import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
+import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.ConfigBuilder;
+import io.fabric8.openshift.client.OpenShiftClient;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -10391,4 +10397,53 @@ public final class APIUtil {
         return false;
     }
 
+    public static JSONObject getServices(Map clusterProperties) {
+
+        JSONObject responses = new JSONObject();
+        JSONObject properties = new JSONObject();
+        JSONObject implParameters = (JSONObject) clusterProperties.get("ImplParameters");
+        String masterURL = (String) implParameters.get("MasterURL");
+        Config serviceConfig = new ConfigBuilder().withMasterUrl((String) clusterProperties.get(masterURL))
+                .withOauthToken((String) clusterProperties.get("SAToken")).withClientKeyPassphrase(System.getProperty("javax.net.ssl.keyStorePassword")).build();
+
+//        Config serviceConfig = new ConfigBuilder().withMasterUrl(masterURL).withOauthToken(saToken).withClientKeyPassphrase(System.getProperty("javax.net.ssl.keyStorePassword")).build();
+
+        OpenShiftClient client = new DefaultOpenShiftClient(serviceConfig);
+//CustomResourceDefinition clusterService = client.customResourceDefinitions().withName(SERVICE).get();
+
+// List<Service> myServices = client.services().list().getItems();
+        List<Service> myServices = client.services().inNamespace(null).list().getItems();
+
+// log.info(String.valueOf(myServices));
+
+// System.out.println(String.valueOf(myServices));
+//MASTER_URL = clusterProperties.get(MASTER_URL);
+
+        for (Service service : myServices) {
+            String serviceName = service.getMetadata().getName();
+            String namespace = service.getMetadata().getNamespace();
+            ServiceSpec serviceSpec = service.getSpec();
+            String serviceType = serviceSpec.getType();
+            List<String> externalIP = serviceSpec.getExternalIPs();
+            List<ServicePort> portSpec = serviceSpec.getPorts();
+            String clusterIP = serviceSpec.getClusterIP();
+
+            for (ServicePort portList : portSpec) {
+                Integer nodePort = portList.getNodePort();
+                String TARGET_PORT = String.valueOf(portList.getTargetPort().getIntVal());
+                Integer port = portList.getPort();
+                String PROTOCOL = portList.getProtocol();
+
+            }
+            responses.put("serviceName",serviceName);
+            responses.put("serviceURL",clusterProperties.get("MasterURL"));
+            properties.put("Namespace",namespace);
+            properties.put("ServiceType",serviceType);
+            properties.put("ExternalIPs",externalIP);
+            properties.put("Protocol", "protocol");
+            responses.put("properties",properties);
+
+        }
+        return responses;
+    }
 }

@@ -443,8 +443,16 @@ public class APIManagerConfiguration {
                             jsonObject.put(APIConstants.ServiceDiscoveryAttributes.SERVICE_DISCOVERY_DISPLAYNAME, attribute.getText());
                         } else if (attribute.getLocalName().equals(APIConstants.ServiceDiscoveryAttributes.SERVICE_DISCOVERY_CLASS)) {
                             jsonObject.put(APIConstants.ServiceDiscoveryAttributes.SERVICE_DISCOVERY_CLASS, attribute.getText());
-                        } else if (attribute.getLocalName().equals(APIConstants.ServiceDiscoveryAttributes.URL)) {
-                            jsonObject.put(APIConstants.ServiceDiscoveryAttributes.URL, attribute.getText());
+                        } else if (attribute.getLocalName().equals("ImplParameters")) {
+                            JSONObject implParameters = new JSONObject();
+                            Iterator implParametersIterator = attribute.getChildElements();
+                            while(implParametersIterator.hasNext()) {
+                                OMElement implParameter = (OMElement) implParametersIterator.next();
+                                if ("MasterURL".equals(implParameter.getLocalName())) {
+                                    implParameters.put("MasterURL", implParameter.getText());
+                                }
+                            }
+                            jsonObject.put("ImplParameters", implParameters);
                         } else if (attribute.getLocalName().equals(APIConstants.ServiceDiscoveryAttributes.SERVICE_DISCOVERY_TYPE)) {
                             jsonObject.put(APIConstants.ServiceDiscoveryAttributes.SERVICE_DISCOVERY_TYPE, attribute.getText());
                         }

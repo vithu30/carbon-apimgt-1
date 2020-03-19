@@ -414,6 +414,27 @@
             </dependency>
 
             <dependency>
+                <groupId>org.wso2.orbit.io.fabric8</groupId>
+                <artifactId>kubernetes-client</artifactId>
+                <version>${org.wso2.orbit.io.fabric8.kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.orbit.com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>${org.wso2.orbit.com.squareup.okio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.orbit.org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${org.wso2.orbit.org.apache.commons.compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.orbit.com.squareup.okhttp</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${org.wso2.orbit.com.squareup.okhttp.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.wso2.carbon.identity.framework</groupId>
                 <artifactId>org.wso2.carbon.identity.mgt.stub</artifactId>
                 <version>${carbon.identity.version}</version>
@@ -1710,6 +1731,10 @@
 	<synapse.version>2.1.7-wso2v147</synapse.version>
 
         <orbit.version.json>3.0.0.wso2v1</orbit.version.json>
+        <org.wso2.orbit.io.fabric8.kubernetes.version>4.6.4.wso2v1</org.wso2.orbit.io.fabric8.kubernetes.version>
+        <org.wso2.orbit.com.squareup.okio.version>2.4.0.wso2v1</org.wso2.orbit.com.squareup.okio.version>
+        <org.wso2.orbit.org.apache.commons.compress.version>1.18.0.wso2v1</org.wso2.orbit.org.apache.commons.compress.version>
+        <org.wso2.orbit.com.squareup.okhttp.version>4.2.0.wso2v1</org.wso2.orbit.com.squareup.okhttp.version>
 
         <!-- orbit httpmime versions-->
         <orbit.httpmime.version>4.3.1.wso2v2</orbit.httpmime.version>

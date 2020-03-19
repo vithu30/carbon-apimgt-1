@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.simple.JSONArray;
 import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
+import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.*;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.*;
 
@@ -33,6 +34,6 @@ public class ServiceDiscoveryApiServiceImpl implements ServiceDiscoveryApiServic
           System.out.println(serviceDiscoveryConfig.size() + "------");
 
       // do some magic!
-      return Response.ok().entity("magic!").build();
+      return Response.ok().entity(APIUtil.getServices(serviceDiscoveryConfig)).build();
   }
 }
