@@ -38,12 +38,20 @@ import TablePagination from '@material-ui/core/TablePagination';
 import TableRow from '@material-ui/core/TableRow';
 import Tooltip from '@material-ui/core/Tooltip';
 import withStyles from '@material-ui/core/styles/withStyles';
+import Popover from '@material-ui/core/Popover';
+import Typography from '@material-ui/core/Typography';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import TextField from '@material-ui/core/TextField';
 import PropTypes from 'prop-types';
+import MUIDataTable from 'mui-datatables';
+import InfoIcon from '@material-ui/icons/Info';
+import UserIcon from '@material-ui/icons/Person';
 
 import Alert from 'AppComponents/Shared/Alert';
 import API from 'AppData/api';
 import { ScopeValidation, resourceMethod, resourcePath } from 'AppData/ScopeValidation';
 import AuthManager from 'AppData/AuthManager';
+import SubscriberInfo from './SubscriberInfo';
 import Invoice from './Invoice';
 
 const styles = (theme) => ({
@@ -122,6 +130,34 @@ const styles = (theme) => ({
     titleWrapper: {
         marginBottom: theme.spacing(3),
     },
+    typography: {
+        padding: theme.spacing(2),
+    },
+    popover: {
+        pointerEvents: 'none',
+    },
+    paper: {
+        padding: theme.spacing(2),
+        boxShadow: "none",
+        backgroundColor: '#f5f5f9',
+    },
+    root: {
+        flexGrow: 1,
+    },
+    InfoToolTip: {
+        backgroundColor: '#f5f5f9',
+        color: 'rgba(0,0,0,0.87)',
+        maxWidth: 500,
+        fontSize: theme.typography.pxToRem(14),
+        fontWeight: '400',
+        border: '1px solid #dadde9',
+        borderRadius: '5px',
+        padding: '15px 10px 0 18px',
+    },
+    orderList: {
+        'list-style-type': 'none',
+    }
+
 });
 
 const tableHeaders = (
@@ -282,6 +318,8 @@ class SubscriptionsTable extends Component {
             rowsPerPageOptions: [5, 10, 25, 50, 100],
             emptyColumnHeight: 60,
             policies: [],
+            subscriberClaims: null,
+            anchorEl: null,
         };
         this.formatSubscriptionStateString = this.formatSubscriptionStateString.bind(this);
         this.blockSubscription = this.blockSubscription.bind(this);
@@ -291,6 +329,9 @@ class SubscriptionsTable extends Component {
         this.handleChangeRowsPerPage = this.handleChangeRowsPerPage.bind(this);
         this.filterSubscriptions = this.filterSubscriptions.bind(this);
         this.isMonetizedPolicy = this.isMonetizedPolicy.bind(this);
+        this.renderClaims= this.renderClaims.bind(this);
+        this.handlePopoverOpen = this.handlePopoverOpen.bind(this);
+        this.handlePopoverClose = this.handlePopoverClose.bind(this);
         this.isNotCreator = AuthManager.isNotCreator();
         this.isNotPublisher = AuthManager.isNotPublisher();
     }
@@ -573,10 +614,29 @@ class SubscriptionsTable extends Component {
         const { page, rowsPerPage, searchQuery } = this.state;
         const promisedSubscriptions = api.subscriptions(this.api.id, page * rowsPerPage, rowsPerPage, searchQuery);
         promisedSubscriptions
-            .then((response) => this.setState({
-                subscriptions: response.body.list,
-                totalSubscription: response.body.pagination.total,
-            }))
+            .then((response) => {
+                this.setState({
+                    subscriptions: response.body.list,
+                    totalSubscription: response.body.pagination.total,
+                });
+                for (let i = 0; i < response.body.list.length; i++) {
+                    let subscriptionId = response.body.list[i].subscriptionId;
+                    const promisedInfo = api.getSubscriberInfo(subscriptionId);
+                    promisedInfo
+                        .then((response) => {
+                            this.setState((prevState) => ({
+                                subscriberClaims: {
+                                    ...prevState.subscriberClaims,
+                                    [subscriptionId] : response.body
+                                }
+                            }))
+                        })
+                        .catch((errorMessage) => {
+                            console.error(errorMessage);
+                            Alert.error(JSON.stringify(errorMessage));
+                        });
+                }
+            })
             .catch((errorMessage) => {
                 console.error(errorMessage);
                 Alert.error(JSON.stringify(errorMessage));
@@ -599,6 +659,18 @@ class SubscriptionsTable extends Component {
         this.setState({ page }, this.fetchSubscriptionData);
     }
 
+    handlePopoverOpen(event) {
+        this.setState({
+            anchorEl: event.currentTarget
+        });
+    }
+
+    handlePopoverClose() {
+        this.setState({
+            anchorEl: null
+        });
+    };
+
     /**
      * Checks whether the policy is a usage based monetization plan
      *
@@ -613,6 +685,61 @@ class SubscriptionsTable extends Component {
         } else {
             return false;
         }
+    }
+
+    renderClaims(claimsObject) {
+        const { classes } = this.props;
+        if (claimsObject) {
+            let claims = [];
+            return (
+                <div className={classes.root}>
+                    <Grid container spacing={1}>
+                        <Grid item>
+                            <UserIcon color={'primary'}/>
+                        </Grid>
+                        <Grid item>
+                            {claimsObject.name}
+                        </Grid>
+                    </Grid>
+                    {
+                        claimsObject.claims && (
+                            <div>
+                                {
+                                    claimsObject.claims.map((claim) => (
+                                        <ol style={{marginLeft: '-20px', marginTop: '8px', 'list-style-type': 'none'}}>
+                                            <li style={{marginTop: '5px'}}>
+                                                <Grid container direction="row" spacing={1}>
+                                                    <Grid item>
+                                                            {claim.name}
+                                                    </Grid>
+                                                    { claim.value !== null ?
+                                                        <Grid item>
+                                                            {claim.value}
+                                                        </Grid>
+                                                        :
+                                                        <Grid item>
+                                                            N/A
+                                                        </Grid>
+                                                    }
+                                                </Grid>
+                                            </li>
+                                        </ol>
+                                    ))
+                                }
+                            </div>
+                        )
+                    }
+                </div>
+            )
+        }
+        return (
+            <div >
+                <FormattedMessage
+                    id='Apis.Details.Subscriptions.Subscriber.no.claims'
+                    defaultMessage='No subscriber claims data available'
+                />
+            </div>
+        )
     }
 
     /**
@@ -635,9 +762,10 @@ class SubscriptionsTable extends Component {
 
     render() {
         const {
-            subscriptions, page, rowsPerPage, totalSubscription, rowsPerPageOptions, emptyColumnHeight,
+            subscriptions, page, rowsPerPage, totalSubscription, rowsPerPageOptions, emptyColumnHeight, subscriberClaims, anchorEl
         } = this.state;
         const { classes, intl, api } = this.props;
+        const open = Boolean(anchorEl);
         if (!subscriptions) {
             return (
                 <Grid container direction='row' justify='center' alignItems='center'>
@@ -647,98 +775,245 @@ class SubscriptionsTable extends Component {
                 </Grid>
             );
         }
+        const columns = [
+            {
+                name: 'subscriptionId',
+                options: {
+                    display: 'excluded',
+                    filter: false,
+                },
+            },
+            {
+                name: 'applicationInfo.applicationId',
+                options: {
+                    display: 'excluded',
+                    filter: false,
+                },
+            },
+            {
+                name: 'applicationInfo.subscriber',
+                label: (
+                    <FormattedMessage
+                        id='Apis.Details.Subscriptions.Listing.column.header.subscriber'
+                        defaultMessage='Subscriber'
+                    />
+                ),
+                options: {
+                    customBodyRender: (value, tableMeta, updateValue) => {
+                        if (tableMeta.rowData) {
+                            return (
+                                <div>
+                                    <Tooltip
+                                        interactive
+                                        placement='top'
+                                        classes={{
+                                            tooltip: classes.InfoToolTip,
+                                        }}
+                                        title={(
+                                            <>
+                                                {subscriberClaims && (
+                                                    <div>
+                                                        {this.renderClaims(subscriberClaims[tableMeta.rowData[0]])}
+                                                    </div>
+                                                )
+                                                }
+                                            </>
+                                        )}
+                                    >
+                                        <Grid container direction="row" alignItems="center" spacing={1}>
+                                            <Grid item>
+                                                <Typography>
+                                                    <InfoIcon color={'action'}/>
+                                                </Typography>
+                                            </Grid>
+                                            <Grid item>
+                                                {value}
+                                            </Grid>
+                                        </Grid>
+                                    </Tooltip>
+                                    {/*<Typography*/}
+                                        {/*onMouseEnter={this.handlePopoverOpen}*/}
+                                        {/*onMouseLeave={this.handlePopoverClose}*/}
+                                    {/*>*/}
+                                        {/*<Grid container direction="row" alignItems="center" spacing={1}>*/}
+                                            {/*<Grid item>*/}
+                                                {/*<Typography>*/}
+                                                    {/*<InfoIcon color={'action'}/>*/}
+                                                {/*</Typography>*/}
+                                            {/*</Grid>*/}
+                                            {/*<Grid item>*/}
+                                                {/*{value}*/}
+                                            {/*</Grid>*/}
+                                        {/*</Grid>*/}
+                                    {/*</Typography>*/}
+                                    {/*<Popover*/}
+                                        {/*id="mouse-over-popover"*/}
+                                        {/*className={classes.popover}*/}
+                                        {/*classes={{*/}
+                                            {/*paper: classes.paper,*/}
+                                        {/*}}*/}
+                                        {/*open={open}*/}
+                                        {/*anchorEl={anchorEl}*/}
+                                        {/*anchorOrigin={{*/}
+                                            {/*vertical: 'bottom',*/}
+                                            {/*horizontal: 'left',*/}
+                                        {/*}}*/}
+                                        {/*transformOrigin={{*/}
+                                            {/*vertical: 'top',*/}
+                                            {/*horizontal: 'left',*/}
+                                        {/*}}*/}
+                                        {/*onClose={this.handlePopoverClose}*/}
+                                        {/*disableRestoreFocus*/}
+                                    {/*>*/}
+                                        {/*<>*/}
+                                            {/*{subscriberClaims && (*/}
+                                                {/*<div>*/}
+                                                    {/*{this.renderClaims(subscriberClaims[tableMeta.rowData[0]])}*/}
+                                                {/*</div>*/}
+                                            {/*)*/}
+                                            {/*}*/}
+                                        {/*</>*/}
+                                    {/*</Popover>*/}
+                                </div>
+                            );
+                        }
+                        return null;
+                    },
+                },
+            },
+            {
+                name: 'applicationInfo.name',
+                label: (
+                    <FormattedMessage
+                        id='Apis.Details.Subscriptions.Listing.column.header.application'
+                        defaultMessage='Application'
+                    />
+                ),
+            },
+            {
+                name: 'applicationInfo.description',
+                options: {
+                    display: 'excluded',
+                    filter: false,
+                },
+            },
+            {
+                name: 'applicationInfo.subscriptionCount',
+                options: {
+                    display: 'excluded',
+                    filter: false,
+                },
+            },
+            {
+                name: 'throttlingPolicy',
+                label: (
+                    <FormattedMessage
+                        id='Apis.Details.Subscriptions.Listing.column.header.throttling.tier'
+                        defaultMessage='Tier'
+                    />
+                ),
+            },
+            {
+                name: 'subscriptionStatus',
+                label: (
+                    <FormattedMessage
+                        id='Apis.Details.Subscriptions.Listing.column.header.subscription.status'
+                        defaultMessage='Status'
+                    />
+                ),
+            },
+            {
+                name: 'actions',
+                label: (
+                    <FormattedMessage
+                        id='Apis.Details.Subscriptions.Listing.column.header.subscription.actions'
+                        defaultMessage='Actions'
+                    />
+                ),
+                options: {
+                    customBodyRender: (value, tableMeta) => {
+                        if (tableMeta.rowData) {
+                            const subscriptionStatus = tableMeta.rowData[7];
+                            const subscriptionId = tableMeta.rowData[0];
+                            return (
+                                <ScopeValidation
+                                    resourceMethod={resourceMethod.POST}
+                                    resourcePath={resourcePath.BLOCK_SUBSCRIPTION}
+                                >
+                                    {
+                                        this.getSubscriptionBlockingButtons(
+                                            subscriptionStatus,
+                                            subscriptionId,
+                                        )
+                                    }
+                                </ScopeValidation>
+                            );
+                        }
+                        return null;
+                    },
+                },
+            },
+            {
+                name: 'invoice',
+                label: (
+                    <FormattedMessage
+                        id='Apis.Details.Subscriptions.Listing.column.header.subscription.invoice'
+                        defaultMessage='Invoice'
+                    />
+                ),
+                options: {
+                    customBodyRender: (value, tableMeta) => {
+                        if (tableMeta.rowData) {
+                            const throttlingPolicy = tableMeta.rowData[6];
+                            const subscriptionId = tableMeta.rowData[0];
+                            return (
+                                <Invoice
+                                    subscriptionId={subscriptionId}
+                                    isNotAuthorized={this.isNotCreator && this.isNotPublisher}
+                                    isMonetizedUsagePolicy={
+                                        this.isMonetizedPolicy(throttlingPolicy)
+                                    }
+                                    api={api}
+                                />
+                            );
+                        }
+                        return null;
+                    },
+                },
+            },
+        ];
+
+        const options = {
+            title: false,
+            print: false,
+            download: false,
+            viewColumns: false,
+            customToolbar: false,
+            search: false,
+            selectableRows: 'none',
+            rowsPerPageOptions: [5, 10, 25, 50, 100],
+            customFooter: () => {
+                return (
+                    <TablePagination
+                        rowsPerPageOptions={rowsPerPageOptions}
+                        colSpan={6}
+                        count={totalSubscription}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onChangePage={this.handleChangePage}
+                        onChangeRowsPerPage={this.handleChangeRowsPerPage}
+                        ActionsComponent={SubscriptionTablePagination}
+                    />
+                );
+            },
+        };
+
         return (
             <>
                 <Paper>
-                    <Tooltip
-                        title={intl.formatMessage({
-                            id: 'Apis.Details.Subscriptions.SubscriptionsTable.search.tooltip',
-                            defaultMessage: 'Search subscriptions by Subscriber, Application and Tier',
-                        })}
-                        aria-label='Search tooltip'
-                    >
-                        <div className={classes.searchDiv}>
-                            <div className={classes.searchRoot}>
-                                <InputBase
-                                    className={classes.searchInput}
-                                    placeholder={intl.formatMessage({
-                                        id: 'Apis.Details.Subscriptions.SubscriptionsTable.search',
-                                        defaultMessage: 'Search',
-                                    })}
-                                    inputProps={{ 'aria-label': 'Search' }}
-                                    onChange={(e) => this.filterSubscriptions(e)}
-                                />
-                                <IconButton className={classes.searchIconButton} aria-label='Search' disabled>
-                                    <Search />
-                                </IconButton>
-                            </div>
-                        </div>
-                    </Tooltip>
                     {subscriptions.length > 0 ? (
                         <div>
-                            <Table className={classes.table}>
-                                <colgroup>
-                                    <col className={classes.tableColumnSize} />
-                                    <col className={classes.tableColumnSize} />
-                                    <col className={classes.tableColumnSize} />
-                                    <col className={classes.tableColumnSize} />
-                                    <col className={classes.tableColumnSize2} />
-                                    <col className={classes.tableColumnSize} />
-                                </colgroup>
-                                <TableHead>
-                                    {tableHeaders}
-                                </TableHead>
-                                <TableBody>
-                                    {subscriptions
-                                        .map((sub) => (
-                                            <TableRow key={sub.subscriptionId}>
-                                                <TableCell>{sub.applicationInfo.subscriber}</TableCell>
-                                                <TableCell>{sub.applicationInfo.name}</TableCell>
-                                                <TableCell>{sub.throttlingPolicy}</TableCell>
-                                                <TableCell>
-                                                    {this.formatSubscriptionStateString(sub.subscriptionStatus)}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <ScopeValidation
-                                                        resourceMethod={resourceMethod.POST}
-                                                        resourcePath={resourcePath.BLOCK_SUBSCRIPTION}
-                                                    >
-                                                        {
-                                                            this.getSubscriptionBlockingButtons(
-                                                                sub.subscriptionStatus,
-                                                                sub.subscriptionId,
-                                                            )
-                                                        }
-                                                    </ScopeValidation>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Invoice
-                                                        subscriptionId={sub.subscriptionId}
-                                                        isNotAuthorized={this.isNotCreator && this.isNotPublisher}
-                                                        isMonetizedUsagePolicy={
-                                                            this.isMonetizedPolicy(sub.throttlingPolicy)
-                                                        }
-                                                        api={api}
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                </TableBody>
-                                <TableFooter>
-                                    <TableRow>
-                                        <TablePagination
-                                            rowsPerPageOptions={rowsPerPageOptions}
-                                            colSpan={6}
-                                            count={totalSubscription}
-                                            rowsPerPage={rowsPerPage}
-                                            page={page}
-                                            onChangePage={this.handleChangePage}
-                                            onChangeRowsPerPage={this.handleChangeRowsPerPage}
-                                            ActionsComponent={SubscriptionTablePagination}
-                                        />
-                                    </TableRow>
-                                </TableFooter>
-                            </Table>
+                            <MUIDataTable title='' data={subscriptions} columns={columns} options={options} />
                         </div>
                     )
                         : (
