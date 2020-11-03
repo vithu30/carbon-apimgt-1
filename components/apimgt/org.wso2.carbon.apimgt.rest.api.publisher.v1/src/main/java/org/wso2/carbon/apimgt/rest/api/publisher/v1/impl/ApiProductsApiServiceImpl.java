@@ -293,8 +293,8 @@ public class ApiProductsApiServiceImpl implements ApiProductsApiService {
     }
 
     @Override
-    public Response apiProductsApiProductIdDocumentsDocumentIdPut(String apiProductId, String documentId,
-            DocumentDTO body, String ifMatch, MessageContext messageContext) {
+    public Response apiProductsApiProductIdDocumentsDocumentIdPut(DocumentDTO body, String apiProductId,
+                                                  String documentId, String ifMatch, MessageContext messageContext) {
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
@@ -378,8 +378,8 @@ public class ApiProductsApiServiceImpl implements ApiProductsApiService {
     }
 
     @Override
-    public Response apiProductsApiProductIdDocumentsPost(String apiProductId, DocumentDTO body,
-            MessageContext messageContext) {
+    public Response apiProductsApiProductIdDocumentsPost(DocumentDTO body, String apiProductId,
+                                             MessageContext messageContext) throws APIManagementException {
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             Documentation documentation = DocumentationMappingUtil.fromDTOtoDocumentation(body);
@@ -460,7 +460,7 @@ public class ApiProductsApiServiceImpl implements ApiProductsApiService {
     }
 
     @Override
-    public Response apiProductsApiProductIdPut(String apiProductId, APIProductDTO body, String ifMatch,
+    public Response apiProductsApiProductIdPut(APIProductDTO body, String apiProductId, String ifMatch,
             MessageContext messageContext) {
         try {
             String username = RestApiUtil.getLoggedInUsername();
@@ -584,8 +584,8 @@ public class ApiProductsApiServiceImpl implements ApiProductsApiService {
     }
 
     @Override
-    public Response apiProductsApiProductIdThumbnailPut(String apiProductId, InputStream fileInputStream,
-            Attachment fileDetail, String ifMatch, MessageContext messageContext) {
+    public Response apiProductsApiProductIdThumbnailPut(InputStream fileInputStream, Attachment fileDetail,
+                                        String apiProductId, String ifMatch, MessageContext messageContext) {
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();

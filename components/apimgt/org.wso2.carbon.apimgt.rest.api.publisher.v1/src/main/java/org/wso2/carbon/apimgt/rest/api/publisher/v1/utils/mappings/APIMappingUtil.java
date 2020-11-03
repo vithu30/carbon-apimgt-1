@@ -73,6 +73,7 @@ import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIProductDTO.StateEnum;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIProductInfoDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIProductListDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIScopeDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.AllOfAPIBusinessInformationDTODTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.DeploymentClusterStatusDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.DeploymentEnvironmentsDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.DeploymentStatusDTO;
@@ -1069,7 +1070,8 @@ public class APIMappingUtil {
         if (model.getAccessControlRoles() != null) {
             dto.setAccessControlRoles(Arrays.asList(model.getAccessControlRoles().split(",")));
         }
-        APIBusinessInformationDTO apiBusinessInformationDTO = new APIBusinessInformationDTO();
+        AllOfAPIBusinessInformationDTODTO apiBusinessInformationDTO = new
+                AllOfAPIBusinessInformationDTODTO();
         apiBusinessInformationDTO.setBusinessOwner(model.getBusinessOwner());
         apiBusinessInformationDTO.setBusinessOwnerEmail(model.getBusinessOwnerEmail());
         apiBusinessInformationDTO.setTechnicalOwner(model.getTechnicalOwner());

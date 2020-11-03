@@ -219,7 +219,7 @@ public class ScopesApiServiceImpl implements ScopesApiService {
      * @throws APIManagementException if an error occurs while updating shared scope
      */
     @Override
-    public Response updateSharedScope(String scopeId, ScopeDTO body, MessageContext messageContext)
+    public Response updateSharedScope(ScopeDTO body, String scopeId, MessageContext messageContext)
             throws APIManagementException {
 
         APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();

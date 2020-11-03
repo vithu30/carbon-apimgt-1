@@ -9,6 +9,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 
 import io.swagger.annotations.*;
@@ -21,31 +22,29 @@ import org.apache.cxf.jaxrs.ext.multipart.Multipart;
 import java.util.Map;
 import java.util.List;
 import javax.validation.constraints.*;
-@Path("/api-categories")
 
+
+@Path("/api-categories")
 @Api(description = "the api-categories API")
-@Consumes({ "application/json" })
-@Produces({ "application/json" })
+
 
 
 public class ApiCategoriesApi  {
-
-  @Context MessageContext securityContext;
-
-ApiCategoriesApiService delegate = new ApiCategoriesApiServiceImpl();
+    @Context MessageContext securityContext;
+    ApiCategoriesApiService delegate = new ApiCategoriesApiServiceImpl();
 
 
     @GET
     
-    @Consumes({ "application/json" })
+    
     @Produces({ "application/json" })
     @ApiOperation(value = "Get all API categories", notes = "Get all API categories ", response = APICategoryListDTO.class, authorizations = {
         @Authorization(value = "OAuth2Security", scopes = {
-            @AuthorizationScope(scope = "apim:api_view", description = "View API")
-        })
-    }, tags={ "API Category (Collection)" })
+            @AuthorizationScope(scope = "", description = "")        })    }, tags={ "API Category (Collection)" })
     @ApiResponses(value = { 
-        @ApiResponse(code = 200, message = "OK. Categories returned ", response = APICategoryListDTO.class) })
+        @ApiResponse(code = 200,
+                    message = "OK. Categories returned ",
+                    response = APICategoryListDTO.class) })
     public Response apiCategoriesGet() throws APIManagementException{
         return delegate.apiCategoriesGet(securityContext);
     }

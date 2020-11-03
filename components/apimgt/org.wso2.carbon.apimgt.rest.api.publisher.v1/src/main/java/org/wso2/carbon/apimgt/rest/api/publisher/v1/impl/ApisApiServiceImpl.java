@@ -643,7 +643,7 @@ public class ApisApiServiceImpl implements ApisApiService {
     }
 
     @Override
-    public Response apisApiIdPut(String apiId, APIDTO body, String ifMatch, MessageContext messageContext) {
+    public Response apisApiIdPut(APIDTO body, String apiId, String ifMatch, MessageContext messageContext) {
         APIDTO updatedApiDTO;
         String[] tokenScopes =
                 (String[]) PhaseInterceptorChain.getCurrentMessage().getExchange().get(RestApiConstants.USER_REST_API_SCOPES);
@@ -1979,7 +1979,7 @@ public class ApisApiServiceImpl implements ApisApiService {
      * @return updated document DTO as response
      */
     @Override
-    public Response apisApiIdDocumentsDocumentIdPut(String apiId, String documentId, DocumentDTO body,
+    public Response apisApiIdDocumentsDocumentIdPut(DocumentDTO body, String apiId, String documentId,
                                                     String ifMatch, MessageContext messageContext) {
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
@@ -2082,7 +2082,7 @@ public class ApisApiServiceImpl implements ApisApiService {
      * @return created document DTO as response
      */
     @Override
-    public Response apisApiIdDocumentsPost(String apiId, DocumentDTO body, String ifMatch, MessageContext messageContext) {
+    public Response apisApiIdDocumentsPost(DocumentDTO body, String apiId, String ifMatch, MessageContext messageContext) {
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             Documentation documentation = DocumentationMappingUtil.fromDTOtoDocumentation(body);
@@ -2477,9 +2477,9 @@ public class ApisApiServiceImpl implements ApisApiService {
      */
 
     @Override
-    public Response apisApiIdMediationPoliciesMediationPolicyIdContentPut(String type, String apiId, String mediationPolicyId,
-                                                                   InputStream fileInputStream, Attachment fileDetail, String inlineContent, String ifMatch, MessageContext messageContext) {
-
+    public Response apisApiIdMediationPoliciesMediationPolicyIdContentPut(InputStream fileInputStream,
+                      Attachment fileDetail, String inlineContent, String type, String apiId,
+                      String mediationPolicyId, String ifMatch, MessageContext messageContext) {
         InputStream contentStream = null;
         APIIdentifier apiIdentifier;
         Mediation updatedMediation;
@@ -2606,9 +2606,9 @@ public class ApisApiServiceImpl implements ApisApiService {
      * @return updated mediation DTO as response
      */
     @Override
-    public Response apisApiIdMediationPoliciesPost(String type, String apiId, InputStream fileInputStream,
-            Attachment fileDetail, String inlineContent, String ifMatch, MessageContext messageContext)
-            throws APIManagementException {
+    public Response apisApiIdMediationPoliciesPost(InputStream fileInputStream, Attachment
+            fileDetail, String inlineContent, String type, String apiId, String ifMatch,
+                                       MessageContext messageContext) throws APIManagementException {
 
         String fileName = "";
         String mediationPolicyUrl = "";
@@ -2755,7 +2755,7 @@ public class ApisApiServiceImpl implements ApisApiService {
      * @return monetizationDTO
      */
     @Override
-    public Response apisApiIdMonetizePost(String apiId, APIMonetizationInfoDTO body, MessageContext messageContext) {
+    public Response apisApiIdMonetizePost(APIMonetizationInfoDTO body, String apiId, MessageContext messageContext) {
         try {
             if (StringUtils.isBlank(apiId)) {
                 String errorMessage = "API ID cannot be empty or null when configuring monetization.";
@@ -2973,8 +2973,8 @@ public class ApisApiServiceImpl implements ApisApiService {
      * @return json response of the updated sequence content
      */
     @Override
-    public Response apisApiIdResourcePoliciesResourcePolicyIdPut(String apiId, String resourcePolicyId,
-            ResourcePolicyInfoDTO body, String ifMatch, MessageContext messageContext) {
+    public Response apisApiIdResourcePoliciesResourcePolicyIdPut(ResourcePolicyInfoDTO body, String apiId,
+                                 String resourcePolicyId, String ifMatch, MessageContext messageContext) {
         try {
             String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
             APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
@@ -3264,7 +3264,7 @@ public class ApisApiServiceImpl implements ApisApiService {
     }
 
     @Override
-    public Response updateAPIThumbnail(String apiId, InputStream fileInputStream, Attachment fileDetail,
+    public Response updateAPIThumbnail(InputStream fileInputStream, Attachment fileDetail, String apiId,
             String ifMatch, MessageContext messageContext) {
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();

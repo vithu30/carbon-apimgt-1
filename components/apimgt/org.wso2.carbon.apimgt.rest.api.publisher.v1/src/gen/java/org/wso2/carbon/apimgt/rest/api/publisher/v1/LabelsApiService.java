@@ -12,12 +12,12 @@ import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.LabelListDTO;
 
 import java.util.List;
+import java.util.Map;
 
 import java.io.InputStream;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-
 
 public interface LabelsApiService {
       public Response labelsGet(MessageContext messageContext) throws APIManagementException;

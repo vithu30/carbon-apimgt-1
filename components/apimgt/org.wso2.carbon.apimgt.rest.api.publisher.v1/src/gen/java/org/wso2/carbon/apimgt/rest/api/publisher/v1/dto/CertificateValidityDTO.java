@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import javax.validation.constraints.*;
 
-
 import io.swagger.annotations.*;
 import java.util.Objects;
 
@@ -15,83 +14,84 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 
 public class CertificateValidityDTO   {
-  
-    private String from = null;
-    private String to = null;
+    private String from = null;    private String to = null;
 
-  /**
-   **/
-  public CertificateValidityDTO from(String from) {
-    this.from = from;
-    return this;
-  }
-
-  
-  @ApiModelProperty(example = "12-12-2017", value = "")
-  @JsonProperty("from")
-  public String getFrom() {
-    return from;
-  }
-  public void setFrom(String from) {
-    this.from = from;
-  }
-
-  /**
-   **/
-  public CertificateValidityDTO to(String to) {
-    this.to = to;
-    return this;
-  }
-
-  
-  @ApiModelProperty(example = "01-01-2019", value = "")
-  @JsonProperty("to")
-  public String getTo() {
-    return to;
-  }
-  public void setTo(String to) {
-    this.to = to;
-  }
-
-
-  @Override
-  public boolean equals(java.lang.Object o) {
-    if (this == o) {
-      return true;
+    /**
+    **/
+    public CertificateValidityDTO from(String from) {
+        this.from = from;
+        return this;
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
+
+  
+    @ApiModelProperty(example = "12-12-2017", value = "")
+    @JsonProperty("from")
+
+    public String getFrom() {
+        return from;
     }
+
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
+    /**
+    **/
+    public CertificateValidityDTO to(String to) {
+        this.to = to;
+        return this;
+    }
+
+  
+    @ApiModelProperty(example = "01-01-2019", value = "")
+    @JsonProperty("to")
+
+    public String getTo() {
+        return to;
+    }
+
+    public void setTo(String to) {
+        this.to = to;
+    }
+
+
+    @Override
+    public boolean equals(java.lang.Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
     CertificateValidityDTO certificateValidity = (CertificateValidityDTO) o;
-    return Objects.equals(from, certificateValidity.from) &&
+        return Objects.equals(from, certificateValidity.from) &&
         Objects.equals(to, certificateValidity.to);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(from, to);
-  }
-
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class CertificateValidityDTO {\n");
-    
-    sb.append("    from: ").append(toIndentedString(from)).append("\n");
-    sb.append("    to: ").append(toIndentedString(to)).append("\n");
-    sb.append("}");
-    return sb.toString();
-  }
-
-  /**
-   * Convert the given object to string with each line indented by 4 spaces
-   * (except the first line).
-   */
-  private String toIndentedString(java.lang.Object o) {
-    if (o == null) {
-      return "null";
     }
-    return o.toString().replace("\n", "\n    ");
-  }
-}
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(from, to);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("class CertificateValidityDTO {\n");
+        
+        sb.append("    from: ").append(toIndentedString(from)).append("\n");
+        sb.append("    to: ").append(toIndentedString(to)).append("\n");
+        sb.append("}");
+        return sb.toString();
+    }
+
+    /**
+    * Convert the given object to string with each line indented by 4 spaces
+    * (except the first line).
+    */
+    private String toIndentedString(java.lang.Object o) {
+        if (o == null) {
+        return "null";
+        }
+        return o.toString().replace("\n", "\n    ");
+    }
+}

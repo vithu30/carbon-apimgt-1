@@ -10,6 +10,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 
 import io.swagger.annotations.*;
@@ -22,50 +23,70 @@ import org.apache.cxf.jaxrs.ext.multipart.Multipart;
 import java.util.Map;
 import java.util.List;
 import javax.validation.constraints.*;
-@Path("/tenants")
 
+
+@Path("/tenants")
 @Api(description = "the tenants API")
-@Consumes({ "application/json" })
-@Produces({ "application/json" })
+
 
 
 public class TenantsApi  {
-
-  @Context MessageContext securityContext;
-
-TenantsApiService delegate = new TenantsApiServiceImpl();
+    @Context MessageContext securityContext;
+    TenantsApiService delegate = new TenantsApiServiceImpl();
 
 
     @HEAD
     @Path("/{tenantDomain}")
-    @Consumes({ "application/json" })
+    
     @Produces({ "application/json" })
     @ApiOperation(value = "Check Whether the Given Tenant already Exists", notes = "Using this operation, user can check whether a given tenant exists or not. ", response = Void.class, authorizations = {
         @Authorization(value = "OAuth2Security", scopes = {
-            @AuthorizationScope(scope = "apim:api_view", description = "View API")
-        })
-    }, tags={ "Tenants",  })
+            @AuthorizationScope(scope = "", description = "")        })    }, tags={ "Tenants" })
     @ApiResponses(value = { 
-        @ApiResponse(code = 200, message = "OK. Requested tenant exists.", response = Void.class),
-        @ApiResponse(code = 404, message = "Not Found. The specified resource does not exist.", response = ErrorDTO.class) })
-    public Response getTenantExistence(@ApiParam(value = "The domain of a specific tenant ",required=true) @PathParam("tenantDomain") String tenantDomain) throws APIManagementException{
+        @ApiResponse(code = 200,
+                    message = "OK. Requested tenant exists.",
+                    response = Void.class),
+        @ApiResponse(code = 404,
+                    message = "Not Found. The specified resource does not exist.",
+                    response = ErrorDTO.class) })
+    public Response getTenantExistence(
+
+        @ApiParam(value = "The domain of a specific tenant ",required=true)
+            @PathParam("tenantDomain") String tenantDomain
+) throws APIManagementException{
         return delegate.getTenantExistence(tenantDomain, securityContext);
     }
 
     @GET
     
-    @Consumes({ "application/json" })
+    
     @Produces({ "application/json" })
     @ApiOperation(value = "Get Tenants by State ", notes = "This operation is to get tenants by state ", response = TenantListDTO.class, authorizations = {
         @Authorization(value = "OAuth2Security", scopes = {
-            @AuthorizationScope(scope = "apim:api_view", description = "View API")
-        })
-    }, tags={ "Tenants" })
+            @AuthorizationScope(scope = "", description = "")        })    }, tags={ "Tenants" })
     @ApiResponses(value = { 
-        @ApiResponse(code = 200, message = "OK. Tenant names returned. ", response = TenantListDTO.class),
-        @ApiResponse(code = 404, message = "Not Found. The specified resource does not exist.", response = ErrorDTO.class),
-        @ApiResponse(code = 406, message = "Not Acceptable. The requested media type is not supported.", response = ErrorDTO.class) })
-    public Response getTenantsByState( @ApiParam(value = "The state represents the current state of the tenant  Supported states are [active, inactive] ", allowableValues="active, inactive", defaultValue="active") @DefaultValue("active") @QueryParam("state") String state,  @ApiParam(value = "Maximum size of resource array to return. ", defaultValue="25") @DefaultValue("25") @QueryParam("limit") Integer limit,  @ApiParam(value = "Starting point within the complete list of items qualified. ", defaultValue="0") @DefaultValue("0") @QueryParam("offset") Integer offset) throws APIManagementException{
+        @ApiResponse(code = 200,
+                    message = "OK. Tenant names returned. ",
+                    response = TenantListDTO.class),
+        @ApiResponse(code = 404,
+                    message = "Not Found. The specified resource does not exist.",
+                    response = ErrorDTO.class),
+        @ApiResponse(code = 406,
+                    message = "Not Acceptable. The requested media type is not supported.",
+                    response = ErrorDTO.class) })
+    public Response getTenantsByState(
+        @ApiParam(value = "The state represents the current state of the tenant  Supported states are [active, inactive] ", allowableValues="active, inactive", defaultValue="active") 
+            @DefaultValue("active") 
+            @QueryParam("state") String state
+, 
+        @ApiParam(value = "Maximum size of resource array to return. ", defaultValue="25") 
+            @DefaultValue("25") 
+            @QueryParam("limit") Integer limit
+, 
+        @ApiParam(value = "Starting point within the complete list of items qualified. ", defaultValue="0") 
+            @DefaultValue("0") 
+            @QueryParam("offset") Integer offset
+) throws APIManagementException{
         return delegate.getTenantsByState(state, limit, offset, securityContext);
     }
 }

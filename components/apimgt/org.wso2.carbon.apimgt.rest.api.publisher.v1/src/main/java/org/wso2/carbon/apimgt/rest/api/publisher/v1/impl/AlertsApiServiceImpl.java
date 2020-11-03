@@ -45,8 +45,8 @@ public class AlertsApiServiceImpl implements AlertsApiService {
     private static final String API_VERSION = "apiVersion";
 
     @Override
-    public Response addAlertConfig(String alertType, String configurationId, AlertConfigInfoDTO body,
-            MessageContext messageContext) {
+    public Response addAlertConfig(Map<String, String> body, String alertType, String configurationId,
+                                   MessageContext messageContext) {
         String tenantAwareUserName = RestApiUtil.getLoggedInUsername();
         PublisherAlertsAPIUtils.validateConfigParameters(configurationId);
         if (body == null) {

@@ -1,8 +1,8 @@
     @XmlType(name="{{datatypeWithEnum}}")
     @XmlEnum({{datatype}}.class)
     public enum {{datatypeWithEnum}} {
-        {{#allowableValues}}{{#enumVars}}{{name}}({{{value}}}){{^-last}},
-        {{/-last}}{{#-last}};{{/-last}}{{/enumVars}}
+        {{#allowableValues}}{{#enumVars}}{{name}}({{{value}}}){{^@last}},
+        {{/@last}}{{#@last}};{{/@last}}{{/enumVars}}
 {{/allowableValues}}
         private {{datatype}} value;
 
