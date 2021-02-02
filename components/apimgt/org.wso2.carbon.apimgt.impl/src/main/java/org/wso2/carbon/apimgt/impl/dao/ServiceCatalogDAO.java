@@ -448,4 +448,9 @@ public class ServiceCatalogDAO {
             handleException("Failed to delete service : " + serviceKey + " from service catalog: " + tenantId, e);
         }
     }
+
+    public ServiceEntry getServiceByUUID(String serviceId, int tenantId) throws APIManagementException {
+        ServiceEntry service = new ServiceEntry();
+        return service;
+    }
 }

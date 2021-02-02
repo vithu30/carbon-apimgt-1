@@ -19,6 +19,7 @@
 package org.wso2.carbon.apimgt.impl;
 
 import org.wso2.carbon.apimgt.api.APIManagementException;
+import org.wso2.carbon.apimgt.api.APIMgtResourceNotFoundException;
 import org.wso2.carbon.apimgt.api.ServiceCatalog;
 import org.wso2.carbon.apimgt.api.model.ServiceEntry;
 import org.wso2.carbon.apimgt.impl.dao.ServiceCatalogDAO;
@@ -41,8 +42,14 @@ public class ServiceCatalogImpl implements ServiceCatalog {
     }
 
     @Override
-    public ServiceEntry getServiceByUUID(String serviceCatalogId, int tenantId) throws APIManagementException {
-        return null;
+    public ServiceEntry getServiceByUUID(String serviceId, int tenantId) throws APIManagementException {
+        ServiceEntry service = ServiceCatalogDAO.getInstance().getServiceByUUID(serviceId, tenantId);
+        if (service != null) {
+            return service;
+        } else {
+            String msg = "Failed to retrieve the Service. Service with " + serviceId + " does not exist";
+            throw new APIMgtResourceNotFoundException(msg);
+        }
     }
 
     @Override

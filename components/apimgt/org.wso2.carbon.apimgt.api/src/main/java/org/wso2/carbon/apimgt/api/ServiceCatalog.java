@@ -47,14 +47,14 @@ public interface ServiceCatalog {
     String updateService(ServiceEntry serviceEntry, int tenantId, String user) throws APIManagementException;
 
     /**
-     * Returns details of an Service Catalog
+     * Returns details of an Service in Service Catalog
      *
-     * @param serviceCatalogId ServiceCatalog Identifier
-     * @param tenantId         Tenant Identifier
-     * @return An ServiceCatalogInfo object related to the given identifier or null
-     * @throws APIManagementException if failed to get details of an Service Catalog
+     * @param serviceId Service Identifier
+     * @param tenantId  Tenant Identifier
+     * @return An ServiceEntry object related to the given identifier or null
+     * @throws APIManagementException if failed to get details of an Service
      */
-    ServiceEntry getServiceByUUID(String serviceCatalogId, int tenantId)
+    ServiceEntry getServiceByUUID(String serviceId, int tenantId)
             throws APIManagementException;
 
     /**
