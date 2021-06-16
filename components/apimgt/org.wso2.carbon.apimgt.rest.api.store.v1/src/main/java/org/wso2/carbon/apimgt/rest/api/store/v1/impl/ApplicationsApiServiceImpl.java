@@ -850,8 +850,10 @@ public class ApplicationsApiServiceImpl implements ApplicationsApiService {
     }
 
     @Override
-    public Response applicationsApplicationIdKeysKeyTypeGenerateTokenPost(String applicationId,
-                                                                          String keyType, ApplicationTokenGenerateRequestDTO body, String ifMatch, MessageContext messageContext) {
+    public Response applicationsApplicationIdKeysKeyTypeGenerateTokenPost(String applicationId, String keyType,
+                                                                          ApplicationTokenGenerateRequestDTO body,
+                                                                          String ifMatch,
+                                                                          MessageContext messageContext) {
         try {
             String username = RestApiCommonUtil.getLoggedInUsername();
             APIConsumer apiConsumer = RestApiCommonUtil.getConsumer(username);
@@ -880,10 +882,17 @@ public class ApplicationsApiServiceImpl implements ApplicationsApiService {
                             appKey.setConsumerSecret(body.getConsumerSecret());
                         }
                         String[] scopes = body.getScopes().toArray(new String[0]);
+                        String grantType;
+                        if (ApplicationTokenGenerateRequestDTO.GrantTypeEnum.TOKEN_EXCHANGE
+                                .equals(body.getGrantType())) {
+                            grantType = APIConstants.OAuthConstants.TOKEN_EXCHANGE;
+                        } else {
+                            grantType = APIConstants.GRANT_TYPE_CLIENT_CREDENTIALS;
+                        }
                         AccessTokenInfo response = apiConsumer.renewAccessToken(body.getRevokeToken(),
                                 appKey.getConsumerKey(), appKey.getConsumerSecret(),
                                 body.getValidityPeriod().toString(), scopes, jsonInput,
-                                APIConstants.KeyManager.DEFAULT_KEY_MANAGER);
+                                APIConstants.KeyManager.DEFAULT_KEY_MANAGER, grantType);
 
                         ApplicationTokenDTO appToken = new ApplicationTokenDTO();
                         appToken.setAccessToken(response.getAccessToken());
@@ -1181,9 +1190,17 @@ public class ApplicationsApiServiceImpl implements ApplicationsApiService {
                     String[] scopes = body.getScopes().toArray(new String[0]);
 
                     try {
+                        String grantType;
+                        if (ApplicationTokenGenerateRequestDTO.GrantTypeEnum.TOKEN_EXCHANGE
+                                .equals(body.getGrantType())) {
+                            grantType = APIConstants.OAuthConstants.TOKEN_EXCHANGE;
+                        } else {
+                            grantType = APIConstants.GRANT_TYPE_CLIENT_CREDENTIALS;
+                        }
                         AccessTokenInfo response = apiConsumer.renewAccessToken(body.getRevokeToken(),
                                 appKey.getConsumerKey(), appKey.getConsumerSecret(),
-                                body.getValidityPeriod().toString(), scopes, jsonInput, appKey.getKeyManager());
+                                body.getValidityPeriod().toString(), scopes, jsonInput, appKey.getKeyManager(),
+                                grantType);
                         ApplicationTokenDTO appToken = new ApplicationTokenDTO();
                         appToken.setAccessToken(response.getAccessToken());
                         if (response.getScopes() != null) {
